@@ -14,6 +14,13 @@ import {
   ArrowRight,
   AlertCircle,
   RefreshCw,
+  Radar,
+  Users,
+  Flame,
+  CheckCircle2,
+  AlertTriangle,
+  Play,
+  ShieldAlert,
 } from 'lucide-react';
 import { shortenAddress, formatSol, formatPercent, formatDate } from '@/lib/utils';
 
@@ -41,6 +48,14 @@ function PaperTradingContent() {
   const [sellRatio, setSellRatio] = useState('1.0');
   const [slippage, setSlippage] = useState('0.015');
 
+  // Consensus & Auto-Exit State
+  const [consensusSignals, setConsensusSignals] = useState<any[]>([]);
+  const [loadingConsensus, setLoadingConsensus] = useState(false);
+  const [consensusHours, setConsensusHours] = useState('4');
+  const [consensusMinWallets, setConsensusMinWallets] = useState('2');
+  const [runningAutoCycle, setRunningAutoCycle] = useState(false);
+  const [cycleReport, setCycleReport] = useState<any>(null);
+
   const fetchSummary = async () => {
     try {
       setLoading(true);
@@ -56,9 +71,27 @@ function PaperTradingContent() {
     }
   };
 
+  const fetchConsensus = async () => {
+    try {
+      setLoadingConsensus(true);
+      const res = await fetch(
+        `/api/consensus/signals?hours=${consensusHours}&minWallets=${consensusMinWallets}`
+      );
+      const data = await res.json();
+      if (data.success) {
+        setConsensusSignals(data.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to load consensus signals:', err);
+    } finally {
+      setLoadingConsensus(false);
+    }
+  };
+
   useEffect(() => {
     fetchSummary();
-  }, []);
+    fetchConsensus();
+  }, [consensusHours, consensusMinWallets]);
 
   const handleExecuteTrade = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +131,37 @@ function PaperTradingContent() {
     }
   };
 
+  // Run Auto Consensus Follow & Smart Exit Cycle
+  const handleRunAutoCycle = async () => {
+    setRunningAutoCycle(true);
+    setCycleReport(null);
+    try {
+      const res = await fetch('/api/consensus/auto-trade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          minWallets: parseInt(consensusMinWallets, 10),
+          buyAmountSol: 2.0,
+          stopLossPct: -0.20,
+          takeProfitPct: 0.50,
+          maxHoldHours: 2.0,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCycleReport(data.data);
+        fetchSummary();
+        fetchConsensus();
+      } else {
+        alert(data.error || '执行巡检失败');
+      }
+    } catch (err: any) {
+      alert(`巡检网络异常: ${err.message}`);
+    } finally {
+      setRunningAutoCycle(false);
+    }
+  };
+
   const openPositions =
     summary?.positions?.filter((p: any) => !p.isClosed && p.remainingTokens > 0) || [];
   const tradeHistory = summary?.trades || [];
@@ -110,24 +174,26 @@ function PaperTradingContent() {
           <div className="flex items-center space-x-2">
             <h1 className="text-xl font-bold text-white flex items-center space-x-2">
               <LineChart className="w-5 h-5 text-roseScarf-300" />
-              <span>Paper Trading 模拟复盘终端</span>
+              <span>Paper Trading 模拟复盘与共识跟单控制台</span>
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-roseScarf-500/20 text-roseScarf-300 border border-roseScarf-500/40">
-              仿真撮合 (含滑点与手续费)
+              多聪明钱共识 × 4层智能出场
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            采用真实链上报价或设定参数进行复盘，引入 1.5% 滑点、0.0005 SOL 手续费及 1.2s 信号执行延迟，杜绝未来函数。
+            采用真实链上流水进行回溯复盘，引入 1.5% 滑点、0.0005 SOL 手续费及 1.2s 延迟。唯有多钱包共识买入与首笔减仓立即逃生纪律方能稳定跑赢噪音。
           </p>
         </div>
 
-        <button
-          onClick={fetchSummary}
-          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-terminal-dark hover:bg-terminal-card border border-terminal-border text-slate-300 text-xs transition self-start"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>刷新净值</span>
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={fetchSummary}
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-terminal-dark hover:bg-terminal-card border border-terminal-border text-slate-300 text-xs transition self-start"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>刷新净值</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -183,12 +249,265 @@ function PaperTradingContent() {
 
         <div className="terminal-card p-3">
           <span className="text-slate-400 text-[11px]">当前在仓头寸</span>
-          <div className="mt-1 text-lg font-bold font-mono text-cyan-400">
+          <div className="mt-1 text-lg font-bold font-mono text-iceBlue-300">
             {openPositions.length} 个标的
           </div>
           <span className="text-[10px] text-slate-400">
             在仓成本: {formatSol(summary?.openPositionsCost || 0, 2)}
           </span>
+        </div>
+      </div>
+
+      {/* TOP SECTION: Multi-Wallet Consensus Radar & Exit Guardian Panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Consensus Radar (2 cols) */}
+        <div className="lg:col-span-2 terminal-card p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-terminal-border/80 pb-3">
+            <div className="flex items-center space-x-2">
+              <Radar className="w-5 h-5 text-roseScarf-400 animate-pulse" />
+              <div>
+                <h2 className="text-sm font-bold text-white flex items-center space-x-2">
+                  <span>多聪明钱共识信号雷达</span>
+                  <span className="text-[10px] font-normal text-roseScarf-300 font-mono bg-roseScarf-500/10 px-2 py-0.5 rounded border border-roseScarf-500/20">
+                    同向共振 $\ge 2$ 钱包
+                  </span>
+                </h2>
+                <p className="text-[11px] text-slate-400">
+                  单一钱包跟单胜率 &lt; 30%，唯有同时间窗口内 $\ge 2$ 个独立聪明钱同时建仓方可确认主升共识
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 self-start sm:self-auto text-xs">
+              <select
+                value={consensusHours}
+                onChange={(e) => setConsensusHours(e.target.value)}
+                className="px-2.5 py-1 rounded bg-terminal-dark border border-terminal-border text-slate-200 text-xs focus:outline-none"
+              >
+                <option value="2">近 2 小时窗口</option>
+                <option value="4">近 4 小时窗口</option>
+                <option value="12">近 12 小时窗口</option>
+                <option value="24">近 24 小时窗口</option>
+              </select>
+
+              <select
+                value={consensusMinWallets}
+                onChange={(e) => setConsensusMinWallets(e.target.value)}
+                className="px-2.5 py-1 rounded bg-terminal-dark border border-terminal-border text-slate-200 text-xs focus:outline-none"
+              >
+                <option value="2">$\ge 2$ 个聪明钱</option>
+                <option value="3">$\ge 3$ 个强共识</option>
+              </select>
+
+              <button
+                onClick={fetchConsensus}
+                className="p-1 rounded bg-terminal-dark border border-terminal-border text-slate-300 hover:text-white"
+                title="重新扫描共识"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingConsensus ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Signals List */}
+          {consensusSignals.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 text-xs space-y-2">
+              <Users className="w-8 h-8 mx-auto opacity-40 text-slate-400" />
+              <p>在当前 {consensusHours} 小时窗口内，尚未检测到 $\ge {consensusMinWallets}$ 个候选聪明钱共识买入的代币。</p>
+              <p className="text-[11px] text-slate-600">
+                （提示：系统已严格过滤单钱包老鼠仓自嗨交易，仅展示多方交叉验证标的）
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {consensusSignals.map((sig) => (
+                <div
+                  key={sig.tokenAddress}
+                  className="p-3.5 rounded-lg bg-terminal-dark/80 border border-terminal-border hover:border-roseScarf-400/50 transition flex flex-col md:flex-row md:items-center justify-between gap-3"
+                >
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-white text-sm">
+                        {sig.tokenSymbol || 'TOKEN'}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
+                          sig.consensusStrength === 'HIGH'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-iceBlue-500/20 text-iceBlue-300 border border-iceBlue-500/40'
+                        }`}
+                      >
+                        {sig.consensusStrength === 'HIGH' ? '🔥 3+ 强共识' : '⚡ 2 钱包共识'}
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-500">
+                        {shortenAddress(sig.tokenAddress, 4)}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                      <div>
+                        参与聪明钱：
+                        <span className="text-white font-mono font-medium">
+                          {sig.walletCount} 个独立地址
+                        </span>
+                      </div>
+                      <div>
+                        共识买入量：
+                        <span className="text-emerald-400 font-mono font-semibold">
+                          {formatSol(sig.totalSolVolume, 2)}
+                        </span>
+                      </div>
+                      <div>
+                        时间跨度：
+                        <span className="text-slate-300 font-mono">
+                          {sig.timeSpanMinutes} 分钟内
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Participating smart wallets tags */}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {sig.participatingWallets?.map((w: any, idx: number) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 rounded text-[10px] bg-white/5 border border-white/10 text-slate-300 font-mono"
+                        >
+                          {w.label || shortenAddress(w.address, 3)} ({formatSol(w.buyAmountSol, 1)})
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center space-x-2 self-end md:self-center shrink-0">
+                    <button
+                      onClick={() => {
+                        setSide('BUY');
+                        setTokenAddress(sig.tokenAddress);
+                        setTokenSymbol(sig.tokenSymbol || '');
+                        setSolAmount('2.0');
+                      }}
+                      className="px-3 py-1.5 rounded bg-terminal-card hover:bg-terminal-hover border border-terminal-border text-slate-200 text-xs transition"
+                    >
+                      填入下单板 &rarr;
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 4-Layer Exit Guardian & Auto Cycle (1 col) */}
+        <div className="terminal-card p-5 space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2 border-b border-terminal-border/80 pb-3">
+              <ShieldAlert className="w-5 h-5 text-roseScarf-400" />
+              <div>
+                <h3 className="text-sm font-bold text-white">4 层智能出场风控体系</h3>
+                <p className="text-[11px] text-slate-400">杜绝“跟得进、逃不出”的踩踏陷阱</p>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="p-2.5 rounded bg-terminal-dark/60 border border-terminal-border space-y-1">
+                <div className="flex items-center justify-between text-rose-300 font-semibold">
+                  <span className="flex items-center space-x-1">
+                    <Flame className="w-3.5 h-3.5" />
+                    <span>第 1 道：首笔减仓全平</span>
+                  </span>
+                  <span className="font-mono text-[10px] text-emerald-400">已防御</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  任一聪明钱只要开始卖出第一笔，不问数量立即 100% 卖出全平，绝不当接盘侠。
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded bg-terminal-dark/60 border border-terminal-border space-y-1">
+                <div className="flex items-center justify-between text-rose-300 font-semibold">
+                  <span className="flex items-center space-x-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>第 2 道：-20% 硬性止损</span>
+                  </span>
+                  <span className="font-mono text-[10px] text-emerald-400">已设防</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  若由于假共识砸盘导致浮亏达到 20%，立即强平，保留元气。
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded bg-terminal-dark/60 border border-terminal-border space-y-1">
+                <div className="flex items-center justify-between text-emerald-300 font-semibold">
+                  <span className="flex items-center space-x-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>第 3 道：+50% 保本止盈</span>
+                  </span>
+                  <span className="font-mono text-[10px] text-emerald-400">已设防</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  浮盈触及 50% 时平仓一半锁定成本，剩余仓位让利润继续奔跑。
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded bg-terminal-dark/60 border border-terminal-border space-y-1">
+                <div className="flex items-center justify-between text-iceBlue-300 font-semibold">
+                  <span className="flex items-center space-x-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>第 4 道：2小时时效衰减</span>
+                  </span>
+                  <span className="font-mono text-[10px] text-emerald-400">已设防</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  持仓满 2 小时未爆发直接离场，规避 Meme 币流动性枯竭死锁。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Run Cycle Button */}
+          <div className="space-y-2 pt-2 border-t border-terminal-border/80">
+            <button
+              onClick={handleRunAutoCycle}
+              disabled={runningAutoCycle}
+              className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-roseScarf-600 to-roseScarf-500 hover:from-roseScarf-500 hover:to-roseScarf-400 text-white font-semibold text-xs transition shadow-lg shadow-roseScarf-500/20 flex items-center justify-center space-x-2 disabled:opacity-50"
+            >
+              {runningAutoCycle ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>正在执行共识捕获与风控巡检...</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 fill-white" />
+                  <span>立即执行共识跟单与出场巡检</span>
+                </>
+              )}
+            </button>
+
+            {/* Cycle Report Output */}
+            {cycleReport && (
+              <div className="p-3 rounded bg-terminal-dark border border-emerald-500/40 text-[11px] space-y-1.5 animate-fadeIn">
+                <div className="text-emerald-400 font-bold flex items-center space-x-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>巡检已执行完毕</span>
+                </div>
+                <div className="text-slate-300">
+                  发现共识标的：<span className="font-mono font-bold text-white">{cycleReport.detectedSignals?.length || 0}</span> 个
+                </div>
+                <div className="text-slate-300">
+                  自动建仓执行：<span className="font-mono font-bold text-cyan-400">{cycleReport.autoBuysExecuted?.length || 0}</span> 笔
+                </div>
+                <div className="text-slate-300">
+                  出场风控巡检：<span className="font-mono font-bold text-amber-400">{cycleReport.exitsEvaluated?.length || 0}</span> 个在仓标的
+                </div>
+                {cycleReport.exitsEvaluated?.filter((e: any) => e.executed).map((ex: any, idx: number) => (
+                  <div key={idx} className="p-1.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20 font-mono text-[10px]">
+                    {ex.reason}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -364,7 +683,7 @@ function PaperTradingContent() {
               </div>
               <div className="flex justify-between">
                 <span>滑点后实际成交价：</span>
-                <span className="font-mono text-cyan-400">
+                <span className="font-mono text-iceBlue-300">
                   {side === 'BUY'
                     ? (parseFloat(priceSol) * (1 + parseFloat(slippage))).toFixed(10)
                     : (parseFloat(priceSol) * (1 - parseFloat(slippage))).toFixed(10)}{' '}
@@ -406,7 +725,7 @@ function PaperTradingContent() {
 
             {openPositions.length === 0 ? (
               <div className="p-8 text-center text-slate-500 text-xs">
-                当前无活跃持仓。可在左侧面板执行一笔模拟买入以建立复盘头寸。
+                当前无活跃持仓。可从上方共识雷达挑选标的，或直接执行一键巡检建立跟单头寸。
               </div>
             ) : (
               <div className="overflow-x-auto">
