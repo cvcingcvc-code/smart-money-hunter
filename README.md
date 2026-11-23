@@ -3,36 +3,57 @@
 [![Solana](https://img.shields.io/badge/Solana-Mainnet-9945FF?logo=solana)](https://solana.com)
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org)
-[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-Dark_Terminal-06b6d4?logo=tailwindcss)](https://tailwindcss.com)
-[![Vitest](https://img.shields.io/badge/Tests-18%20Passed-emerald?logo=vitest)](https://vitest.dev)
+[![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-Winter_Aesthetic-c27d88?logo=tailwindcss)](https://tailwindcss.com)
+[![Vitest](https://img.shields.io/badge/Tests-28%20Passed-emerald?logo=vitest)](https://vitest.dev)
 
-面向 **Solana Meme 币研究团队** 打造的一体化链上情报分析、量化打标、信号监控与模拟复盘（Paper Trading）工作台。
+面向 **Solana Meme 币研究团队** 打造的一体化链上情报分析、100个赚钱钱包雷达挖掘、多钱包共识跟单、4层智能出场风控与模拟复盘（Paper Trading）工作台。
+
+界面采用独特的 **「冬雪寒霜 × 烟粉玫瑰」** 二次元质感设计，半透明毛玻璃卡片搭配轻量漫天飘雪动效，兼具交易终端的专业严谨与二次元美学。
 
 ---
 
 ## 一、系统核心定位与设计哲学
 
-1. **纯研究与模拟工具**：本系统**绝不请求、不存储任何钱包私钥或助记词**，不提供任何真实链上交易广播与执行能力，所有跟单与撮合仅在 **Paper Trading 仿真环境** 中运行。
-2. **严谨的数据流闭环**：
-   $$\text{公开链上 RPC 数据} \longrightarrow \text{交易流差分解析} \longrightarrow \text{量化指标计算} \longrightarrow \text{7 大客观规则打标} \longrightarrow \text{AI 深度画像研报} \longrightarrow \text{增量信号监控} \longrightarrow \text{模拟复盘}$$
-3. **真实性与不可用区分**：严格隔离真实链上数据、仿真推演数据与价格不可得标记（Mark as Unavailable），杜绝未来函数。
+1. **纯研究与模拟工具**：本系统**绝不请求、不存储任何钱包私钥或助记词**，不提供任何真实链上交易广播与执行能力，所有跟单与撮合仅在 **Paper Trading 仿真环境** 中闭环运行。
+2. **多聪明钱共识验证（Consensus Verification）**：
+   - 单一钱包跟单由于 1~3 秒网络延迟、流动性冲击和发币方老鼠仓钓鱼，实盘跟单胜率普遍低于 30%。
+   - 本系统采用 **$\ge 2$ 个独立高胜率聪明钱同时间窗口买入同一代币** 的共识算法，从根源上过滤伪装大户与自嗨交易。
+3. **4 层智能出场风控体系（Smart Exit Guardian）**：
+   - **第 1 道：首笔减仓逃生**。任一聪明钱只要开始卖出第一笔，不问数量立即 100% 卖出全平，绝不当接盘侠。
+   - **第 2 道：-20% 硬性止损**。若遇假共识直接割肉止损，保留元气。
+   - **第 3 道：+50% 保本止盈**。浮盈触及 50% 时平仓一半锁定成本，剩余仓位让利润继续奔跑。
+   - **第 4 道：2小时时效衰减**。持仓满 2 小时未爆发直接离场，规避 Meme 币流动性枯竭死锁。
 4. **硬性规则防幻觉**：客观标签完全由量化数学公式与阈值触发，AI 仅用于基于结构化上下文撰写可读性投研画像，不得自行决定客观标签。
 
 ---
 
 ## 二、功能特性一览
 
-### 1. 钱包研究库管理 (`/wallets`)
+### 1. 100 赚钱钱包自动挖掘雷达 (`/scanner` & `pnpm scan:100`)
+- 一键批量采集扫描 100 个活跃 Solana 钱包的链上流水。
+- 自动解析买卖行为并计算：总流水、买入卖出笔数、已实现盈亏 (SOL)、胜率 (%)、持仓集中度。
+- 自动识别净盈利钱包并筛选输出 **候选聪明钱 (Candidate Smart Money)** 与排行榜。
+
+### 2. 多聪明钱共识信号雷达 (`/paper-trading`)
+- 在滑动时间窗口（2h/4h/12h/24h）内聚合同一代币的多钱包买入行为。
+- 当且仅当 $\ge 2$ 个被标记为候选聪明钱的地址共同买入时，触发 `MEDIUM` 或 `HIGH` 级共识信号。
+- 支持一键填入仿真下单板或自动执行共识跟单。
+
+### 3. 4 层出场风控控制台与一键自动化巡检 (`/api/consensus/auto-trade`)
+- 实时轮询在仓头寸，检测关联聪明钱是否有卖出流水、实时浮动盈亏与持仓时长。
+- 支持一键执行「共识建仓 + 智能出场风控巡检」，自动化生成详细的避险平仓日志。
+
+### 4. 钱包研究库管理 (`/wallets`)
 - 支持手动录入 Base58 格式 Solana 钱包公钥，自动校验地址合法性与防重判定。
 - 提供分类筛选（`MEME_TRADER`、`SMART_MONEY`、`SNIPER`、`KOL`、`UNKNOWN`）与模糊搜索。
 - 支持一键激活 / 暂停轮询监控，预置 20+ 个多维度样本钱包。
 
-### 2. 链上交易流解析与同步 (`src/lib/solana/parser.ts`)
+### 5. 链上交易流解析与同步 (`src/lib/solana/parser.ts`)
 - 基于余额差分算法（Balance Deltas），精准识别代币买卖方向（BUY / SELL）、SOL 净发生额、SPL Token 变化量与 Gas 费。
 - 自动识别主流路由协议：**Raydium AMM / CPMM / CLMM**、**Pump.fun 内盘**、**Jupiter v6**、**Orca Whirlpool**。
 - 支持 RPC 限流自适应退避与备用节点轮询。
 
-### 3. 7 大客观量化规则打标引擎 (`/tags`)
+### 6. 7 大客观量化规则打标引擎 (`/tags`)
 系统预置 7 大客观规则打标器，每项标签输出完整判定条件、实际参数值、样本量与置信度：
 1. **候选聪明钱 (`CANDIDATE_SMART_MONEY`)**：胜率 $\ge 65\%$ 且 已实现盈亏 $\ge 10.0\text{ SOL}$ 且 样本量 $\ge 8$ 笔。
 2. **早期买入 (`EARLY_BUYER`)**：开盘极早期（Pump.fun/内盘开盘）买入次数 $\ge 2$ 次。
@@ -42,22 +63,21 @@
 6. **高风险 (`HIGH_RISK`)**：胜率 $< 35\%$ (样本 $\ge 5$) 或 综合风险评分 $\ge 60/100$。
 7. **数据不足 (`INSUFFICIENT_DATA`)**：样本量 $< 5$ 笔 或 缺乏平仓卖单记录，不作主观臆断。
 
-### 4. AI 结构化深度研报 (`/wallets/[address]`)
+### 7. AI 结构化深度研报 (`/wallets/[address]`)
 - 兼容 OpenAI 标准协议（支持 OpenAI、DeepSeek、Gemini 等主流大模型）。
 - 严格输出 5 大维度：交易习惯剖析、潜在核心优势、主要风险警示、数据可靠性评级、是否建议继续观察（`RECOMMEND` / `NEUTRAL` / `AVOID`）。
 - **内置量化降级引擎**：未配置 API Key 或网络离线时，自动切换至本地确定性量化研报合成器，确保 100% 稳定运行。
 
-### 5. 链上实时信号监控 (`/monitor` & Worker)
+### 8. 链上实时信号监控 (`/monitor` & Worker)
 - 支持站内实时告警流（买入、卖出、大额异动），支持未读状态管理与一键标为已读。
 - 独立 Node.js 后台监控进程 (`pnpm worker:monitor`)，基于增量 Signature 抓取，杜绝重复告警。
-- 提供一键跳转至模拟跟单交易入口。
 
-### 6. Paper Trading 模拟复盘终端 (`/paper-trading`)
+### 9. Paper Trading 模拟复盘终端 (`/paper-trading`)
 - 仿真买入与分批卖出（25% / 50% / 100%）。
 - 考虑交易滑点（1.0% / 1.5% / 3.0%）、网络 Gas 损耗（0.0005 SOL）与信号延迟（1200ms）。
 - 完整输出累计盈亏、在仓成本、胜率统计、历史最大回撤（MDD）与审计日志流水。
 
-### 7. 每日投研复盘简报 (`/daily-review`)
+### 10. 每日投研复盘简报 (`/daily-review`)
 - 自动按日聚合全库数据，生成包括核心执行摘要、链上异动洞察、候选聪明钱英雄榜与模拟跟单收益复盘的结构化简报。
 
 ---
@@ -88,7 +108,7 @@ DATABASE_URL="file:./dev.db"
 
 # Solana RPC 节点 (默认官方公共节点，可替换为 Helius/QuickNode/Ankr 提升吞吐)
 SOLANA_RPC_URL="https://api.mainnet-beta.solana.com"
-SOLANA_BACKUP_RPC_URL="https://rpc.ankr.com/solana"
+SOLANA_BACKUP_RPC_URL="https://solana-rpc.publicnode.com"
 
 # 可选 AI 模型配置 (留空将自动降级为本地量化研报合成引擎)
 AI_API_KEY=""
@@ -119,7 +139,14 @@ pnpm dev
 ```
 打开浏览器访问：[http://localhost:3000](http://localhost:3000)
 
-### 6. (可选) 启动后台监控 Worker
+### 6. 一键扫描 100 个赚钱钱包
+在终端直接运行快速批处理脚本：
+```bash
+pnpm scan:100
+```
+或在浏览器端打开 `/scanner` 页面点击「立即开始自动挖掘 100 个钱包」。
+
+### 7. (可选) 启动后台监控 Worker
 在独立终端运行：
 ```bash
 pnpm worker:monitor
@@ -129,7 +156,7 @@ pnpm worker:monitor
 
 ## 四、自动化测试套件
 
-项目采用 **Vitest** 进行全链路分层单元与集成测试：
+项目采用 **Vitest** 进行全链路 8 大阶段分层单元与端到端测试，当前共计 **28 个测试用例全部通过 (28 Passed)**：
 
 ```bash
 pnpm test
@@ -141,6 +168,9 @@ pnpm test
 - `tests/step3_rules_and_metrics.test.ts`：胜率/盈亏指标计算、7 大客观规则打标判定与边界条件
 - `tests/step4_monitor_and_alerts.test.ts`：增量签名防重报警、站内通知已读状态管理
 - `tests/step5_ai_and_paper_trading.test.ts`：AI 结构化研报生成、Paper Trading 滑点/手续费结算、最大回撤 (MDD) 计算
+- `tests/step6_integration_and_audit.test.ts`：端到端全生命周期闭环审计
+- `tests/step7_scanner.test.ts`：100 钱包批量采集与胜率盈亏分析
+- `tests/step8_consensus_and_exit.test.ts`：多聪明钱共识识别、首笔减仓逃生机制、-20%硬止损与完整交易循环
 
 ---
 
@@ -152,28 +182,32 @@ smart-money-hunter/
 │   ├── schema.prisma        # 8 大数据库模型定义
 │   └── seed.ts              # 21 个钱包初始种子数据
 ├── scripts/
-│   └── monitor-worker.ts    # 后台独立轮询监控 Worker
+│   ├── monitor-worker.ts    # 后台独立轮询监控 Worker
+│   └── scan-and-analyze-100.ts # 100 个钱包批量扫描与盈利分析脚本
 ├── src/
 │   ├── app/
-│   │   ├── api/             # RESTful API 端点 (钱包、计算、监控、模拟盘、研报、每日复盘)
+│   │   ├── api/             # RESTful API 端点 (钱包、计算、监控、模拟盘、共识跟单、研报、每日复盘)
 │   │   ├── daily-review/    # 每日复盘简报页面
 │   │   ├── monitor/         # 链上信号监控台
-│   │   ├── paper-trading/   # Paper Trading 仿真终端
+│   │   ├── paper-trading/   # Paper Trading 仿真终端 & 共识雷达
+│   │   ├── scanner/         # 100 钱包雷达挖掘看板
 │   │   ├── tags/            # 7 大规则打标与透视页面
 │   │   ├── wallets/         # 钱包库管理与 [address] 详情档案
-│   │   ├── layout.tsx       # 交易终端全局外壳
+│   │   ├── layout.tsx       # 全局外壳 (冬雪二次元美学主题)
 │   │   └── page.tsx         # 总览仪表盘
 │   ├── components/
-│   │   └── Navbar.tsx       # 顶部导航与节点健康状态栏
+│   │   ├── Navbar.tsx       # 顶部导航与节点健康状态栏
+│   │   └── SnowEffect.tsx   # 漫天飘雪二次元动效
 │   ├── lib/
 │   │   ├── ai/              # AI 提示词与本地降级研报合成器
-│   │   ├── intelligence/    # 量化指标计算与 7 大客观规则引擎
+│   │   ├── intelligence/    # 量化指标计算、7 大客观规则打标与多钱包共识引擎
 │   │   ├── monitor/         # 轮询调度器与防重报警服务
-│   │   ├── paper/           # Paper Trading 仿真撮合与 MDD 引擎
+│   │   ├── paper/           # Paper Trading 撮合、4层出场风控与共识交易巡检服务
+│   │   ├── scanner/         # 100 钱包采集器与批处理分析器
 │   │   ├── solana/          # RPC 连接池、重试队列与交易解析器
 │   │   └── utils.ts         # 常用数学、格式化与地址截断工具
 │   └── types/               # 完整 TypeScript 类型声明
-└── tests/                   # Vitest 5 大阶段完整测试套件
+└── tests/                   # Vitest 8 大阶段完整测试套件 (28/28 Passed)
 ```
 
 ---
