@@ -66,10 +66,10 @@ export default function DailyReviewPage() {
         <div>
           <div className="flex items-center space-x-2">
             <h1 className="text-xl font-bold text-white flex items-center space-x-2">
-              <CalendarCheck className="w-5 h-5 text-trade-accent" />
+              <CalendarCheck className="w-5 h-5 text-roseScarf-300" />
               <span>每日投研复盘简报</span>
             </h1>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-roseScarf-500/20 text-roseScarf-300 border border-roseScarf-500/40">
               数据驱动 / 自动聚合
             </span>
           </div>
@@ -81,7 +81,7 @@ export default function DailyReviewPage() {
         <button
           onClick={handleGenerateTodayReview}
           disabled={generating}
-          className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold text-xs transition disabled:opacity-50 shadow-md shadow-emerald-500/20"
+          className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-roseScarf-500 to-roseScarf-600 hover:from-roseScarf-400 hover:to-roseScarf-500 text-white font-semibold text-xs transition disabled:opacity-50 shadow-lg shadow-rose-950/40 border border-rose-300/30"
         >
           <Sparkles className="w-4 h-4" />
           <span>{generating ? '正在聚合数据生成中...' : '生成今日复盘报告'}</span>

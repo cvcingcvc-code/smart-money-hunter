@@ -5,22 +5,18 @@ import {
   Bell,
   LineChart,
   ShieldCheck,
-  Search,
   ArrowUpRight,
-  ArrowDownRight,
   Sparkles,
   Zap,
   Activity,
-  Layers,
   CheckCircle2,
 } from 'lucide-react';
 import prisma from '@/lib/prisma';
-import { shortenAddress, formatSol, formatPercent, formatDate } from '@/lib/utils';
+import { shortenAddress, formatSol, formatDate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-  // Read baseline overview metrics safely
   let totalWallets = 0;
   let smartMoneyCount = 0;
   let activeMonitors = 0;
@@ -66,42 +62,48 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner & Notice */}
-      <div className="relative overflow-hidden rounded-xl border border-terminal-border bg-gradient-to-r from-terminal-dark to-slate-900 p-5 shadow-lg">
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-trade-accent/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
+      {/* Top Hero Banner — Winter Anime Frost Atmosphere */}
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-terminal-darkest/85 via-slate-900/80 to-roseScarf-950/40 p-6 shadow-2xl backdrop-blur-xl">
+        <div className="absolute top-0 right-0 w-80 h-full opacity-20 pointer-events-none overflow-hidden">
+          <img
+            src="/images/winter-girl.jpg"
+            alt="Winter Aesthetic"
+            className="w-full h-full object-cover object-[70%_25%] blur-[1px]"
+          />
+        </div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-trade-accent/15 text-trade-accent border border-trade-accent/30">
-                链上情报终端 v1.0
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-roseScarf-500/20 text-roseScarf-300 border border-roseScarf-500/40">
+                ❄️ 冬雪寒霜 • 链上寻踪
               </span>
               <span className="text-xs text-slate-400">
-                Solana Meme 币钱包研究与模拟复盘
+                Solana Meme 币情报与模拟复盘终端
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white mt-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               Smart Money Hunter 工作台
             </h1>
-            <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-              提供从公开 RPC 交易抓取、量化胜率与盈亏计算、7 大客观规则打标、AI
-              辅助研报，到交易信号模拟复盘的一体化闭环体系。
+            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+              集公开 RPC 交易抓取、量化胜率与盈亏差分分析、7 大客观规则打标、AI
+              辅助画像研报与仿真 Paper Trading 于一体。在银白霜雪般的冷静理性中，捕捉链上真实聪明钱。
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <Link
               href="/wallets"
-              className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold text-xs transition shadow-md shadow-emerald-500/20"
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-roseScarf-500 to-roseScarf-600 hover:from-roseScarf-400 hover:to-roseScarf-500 text-white font-semibold text-xs transition shadow-lg shadow-rose-950/40 border border-rose-300/30"
             >
               <Wallet className="w-4 h-4" />
               <span>录入新钱包</span>
             </Link>
             <Link
               href="/paper-trading"
-              className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-lg bg-terminal-card hover:bg-terminal-hover border border-terminal-border text-slate-200 text-xs transition"
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-slate-200 text-xs transition backdrop-blur-md"
             >
-              <LineChart className="w-4 h-4 text-cyan-400" />
-              <span>模拟盘回测</span>
+              <LineChart className="w-4 h-4 text-frostIce-300" />
+              <span>模拟盘复盘</span>
             </Link>
           </div>
         </div>
@@ -113,11 +115,11 @@ export default async function DashboardPage() {
         <div className="terminal-card p-4">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">已录入钱包</span>
-            <div className="p-1.5 rounded bg-blue-500/10 text-blue-400">
+            <div className="p-2 rounded-lg bg-frostIce-500/10 text-frostIce-300 border border-frostIce-500/20">
               <Wallet className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline space-x-2">
+          <div className="mt-3 flex items-baseline space-x-2">
             <span className="text-2xl font-bold font-mono text-white">
               {totalWallets}
             </span>
@@ -125,9 +127,9 @@ export default async function DashboardPage() {
               ({activeMonitors} 监控中)
             </span>
           </div>
-          <div className="mt-2 flex items-center text-[11px] text-emerald-400">
-            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-            <span>首期支持 20+ 样本</span>
+          <div className="mt-2.5 flex items-center text-[11px] text-frostIce-300">
+            <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-frostIce-400" />
+            <span>预置 21 个高质量研究样本</span>
           </div>
         </div>
 
@@ -135,17 +137,17 @@ export default async function DashboardPage() {
         <div className="terminal-card p-4">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">候选聪明钱</span>
-            <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400">
+            <div className="p-2 rounded-lg bg-roseScarf-500/15 text-roseScarf-300 border border-roseScarf-500/30">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline space-x-2">
-            <span className="text-2xl font-bold font-mono text-emerald-400">
+          <div className="mt-3 flex items-baseline space-x-2">
+            <span className="text-2xl font-bold font-mono text-roseScarf-300">
               {smartMoneyCount}
             </span>
-            <span className="text-[11px] text-slate-400">经规则引擎筛选</span>
+            <span className="text-[11px] text-slate-400">经规则引擎硬性筛选</span>
           </div>
-          <div className="mt-2 flex items-center text-[11px] text-slate-400">
+          <div className="mt-2.5 flex items-center text-[11px] text-slate-400">
             <span>胜率 ≥65% & PnL&gt;10 SOL</span>
           </div>
         </div>
@@ -154,19 +156,19 @@ export default async function DashboardPage() {
         <div className="terminal-card p-4">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">链上监控事件</span>
-            <div className="p-1.5 rounded bg-amber-500/10 text-amber-400">
+            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/20">
               <Bell className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline space-x-2">
+          <div className="mt-3 flex items-baseline space-x-2">
             <span className="text-2xl font-bold font-mono text-white">
               {totalAlerts}
             </span>
-            <span className="text-[11px] text-slate-400">买入/卖出告警</span>
+            <span className="text-[11px] text-slate-400">买卖预警</span>
           </div>
-          <div className="mt-2 flex items-center text-[11px] text-cyan-400">
+          <div className="mt-2.5 flex items-center text-[11px] text-frostIce-300">
             <Activity className="w-3.5 h-3.5 mr-1" />
-            <span>增量防重轮询机制</span>
+            <span>签名去重轮询调度</span>
           </div>
         </div>
 
@@ -174,11 +176,11 @@ export default async function DashboardPage() {
         <div className="terminal-card p-4">
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400 font-medium">模拟复盘已实现盈亏</span>
-            <div className="p-1.5 rounded bg-purple-500/10 text-purple-400">
+            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/20">
               <LineChart className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline space-x-2">
+          <div className="mt-3 flex items-baseline space-x-2">
             <span
               className={`text-2xl font-bold font-mono ${
                 paperRealizedPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'
@@ -188,8 +190,8 @@ export default async function DashboardPage() {
               {paperRealizedPnl.toFixed(2)} SOL
             </span>
           </div>
-          <div className="mt-2 flex items-center text-[11px] text-slate-400">
-            <span>{paperTradesCount} 笔已撮合模拟单 (含滑点)</span>
+          <div className="mt-2.5 flex items-center text-[11px] text-slate-400">
+            <span>{paperTradesCount} 笔模拟撮合 (含滑点与手续费)</span>
           </div>
         </div>
       </div>
@@ -200,14 +202,14 @@ export default async function DashboardPage() {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <Sparkles className="w-4 h-4 text-roseScarf-300" />
               <h2 className="text-sm font-bold text-white tracking-wide">
                 聪明钱雷达榜 (候选重点观察)
               </h2>
             </div>
             <Link
               href="/wallets"
-              className="text-xs text-trade-accent hover:underline flex items-center"
+              className="text-xs text-roseScarf-300 hover:text-roseScarf-200 flex items-center transition"
             >
               查看全部钱包 ({totalWallets}) <ArrowUpRight className="w-3.5 h-3.5 ml-0.5" />
             </Link>
@@ -216,7 +218,7 @@ export default async function DashboardPage() {
           <div className="terminal-card overflow-hidden">
             {candidateWallets.length === 0 ? (
               <div className="p-8 text-center">
-                <div className="w-12 h-12 rounded-full bg-slate-800/80 text-slate-400 mx-auto flex items-center justify-center mb-3">
+                <div className="w-12 h-12 rounded-full bg-white/5 text-slate-400 mx-auto flex items-center justify-center mb-3">
                   <Wallet className="w-6 h-6" />
                 </div>
                 <h3 className="text-sm font-medium text-slate-200">
@@ -227,7 +229,7 @@ export default async function DashboardPage() {
                 </p>
                 <Link
                   href="/wallets"
-                  className="mt-4 inline-flex items-center px-3 py-1.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-medium hover:bg-emerald-500/30 transition"
+                  className="mt-4 inline-flex items-center px-3.5 py-1.5 rounded-lg bg-roseScarf-500/20 text-roseScarf-300 border border-roseScarf-500/40 text-xs font-medium hover:bg-roseScarf-500/30 transition"
                 >
                   去录入首批钱包
                 </Link>
@@ -235,18 +237,18 @@ export default async function DashboardPage() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-terminal-dark border-b border-terminal-border text-slate-400 uppercase font-mono text-[11px]">
+                  <thead className="bg-terminal-darkest/60 border-b border-white/10 text-slate-400 uppercase font-mono text-[11px]">
                     <tr>
-                      <th className="px-4 py-3">钱包地址 / 备注</th>
+                      <th className="px-4 py-3">钱包地址 / 别名</th>
                       <th className="px-3 py-3">分类</th>
-                      <th className="px-3 py-3">样本交易数</th>
+                      <th className="px-3 py-3">样本交易</th>
                       <th className="px-3 py-3">胜率</th>
                       <th className="px-3 py-3">已实现盈亏</th>
                       <th className="px-3 py-3">核心标签</th>
-                      <th className="px-3 py-3 text-right">操作</th>
+                      <th className="px-4 py-3 text-right">操作</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-terminal-border/60">
+                  <tbody className="divide-y divide-white/5">
                     {candidateWallets.map((wallet) => {
                       const metrics = wallet.metrics;
                       const winRate = metrics?.winRate;
@@ -254,7 +256,7 @@ export default async function DashboardPage() {
                       return (
                         <tr
                           key={wallet.id}
-                          className="hover:bg-terminal-hover/50 transition-colors"
+                          className="hover:bg-white/5 transition-colors"
                         >
                           <td className="px-4 py-3">
                             <div className="font-mono font-medium text-white">
@@ -265,7 +267,7 @@ export default async function DashboardPage() {
                             </div>
                           </td>
                           <td className="px-3 py-3">
-                            <span className="terminal-badge badge-cyan">
+                            <span className="terminal-badge badge-rose text-[10px]">
                               {wallet.category}
                             </span>
                           </td>
@@ -284,7 +286,7 @@ export default async function DashboardPage() {
                                 {winRate.toFixed(1)}%
                               </span>
                             ) : (
-                              <span className="text-slate-500">不可得</span>
+                              <span className="text-slate-500">待计算</span>
                             )}
                           </td>
                           <td className="px-3 py-3 font-mono">
@@ -298,7 +300,7 @@ export default async function DashboardPage() {
                                 {pnl.toFixed(2)} SOL
                               </span>
                             ) : (
-                              <span className="text-slate-500">不可得</span>
+                              <span className="text-slate-500">待计算</span>
                             )}
                           </td>
                           <td className="px-3 py-3">
@@ -313,12 +315,12 @@ export default async function DashboardPage() {
                               ))}
                             </div>
                           </td>
-                          <td className="px-3 py-3 text-right">
+                          <td className="px-4 py-3 text-right">
                             <Link
                               href={`/wallets/${wallet.address}`}
-                              className="text-trade-accent hover:underline text-xs"
+                              className="text-roseScarf-300 hover:underline text-xs"
                             >
-                              详情研报 &rarr;
+                              投研画像 &rarr;
                             </Link>
                           </td>
                         </tr>
@@ -331,20 +333,20 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Right 1 Col: Live Monitor Feed & System Rules */}
+        {/* Right 1 Col: Live Monitor Feed */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Zap className="w-4 h-4 text-amber-400" />
+              <Zap className="w-4 h-4 text-amber-300" />
               <h2 className="text-sm font-bold text-white tracking-wide">
                 实时链上监控流
               </h2>
             </div>
             <Link
               href="/monitor"
-              className="text-xs text-trade-accent hover:underline flex items-center"
+              className="text-xs text-roseScarf-300 hover:text-roseScarf-200 flex items-center transition"
             >
-              完整事件 <ArrowUpRight className="w-3.5 h-3.5 ml-0.5" />
+              全部信号 <ArrowUpRight className="w-3.5 h-3.5 ml-0.5" />
             </Link>
           </div>
 
@@ -353,13 +355,13 @@ export default async function DashboardPage() {
               <div className="py-8 text-center text-slate-500 text-xs">
                 暂无监控告警记录。
                 <br />
-                启动监控 Worker 后将实时捕获新买卖行为。
+                启动监控 Worker 或在监控台点击即时巡检。
               </div>
             ) : (
               recentAlerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className="p-2.5 rounded bg-terminal-dark/60 border border-terminal-border/80 flex items-start justify-between gap-2"
+                  className="p-2.5 rounded-lg bg-white/5 border border-white/5 flex items-start justify-between gap-2"
                 >
                   <div className="space-y-0.5">
                     <div className="flex items-center space-x-1.5">
@@ -381,7 +383,7 @@ export default async function DashboardPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <div className="text-xs font-mono text-slate-300">
+                    <div className="text-xs font-mono text-slate-200">
                       {alert.amountSol ? formatSol(alert.amountSol, 2) : '-'}
                     </div>
                     <div className="text-[10px] text-slate-500">
@@ -394,15 +396,15 @@ export default async function DashboardPage() {
           </div>
 
           {/* System Safety Guarantees Widget */}
-          <div className="terminal-card p-3.5 bg-slate-900/60 border-slate-800 space-y-2">
-            <div className="flex items-center space-x-1.5 text-xs font-semibold text-slate-300">
+          <div className="terminal-card p-4 bg-slate-900/60 border-white/10 space-y-2">
+            <div className="flex items-center space-x-1.5 text-xs font-semibold text-roseScarf-300">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>智能合约与合规安全声明</span>
+              <span>安全规范与纪律声明</span>
             </div>
             <ul className="text-[11px] text-slate-400 space-y-1 list-disc list-inside">
               <li>本系统绝不请求或保存任何私钥与助记词。</li>
-              <li>不提供任何真实交易执行功能，所有交易仅限 Paper Trading。</li>
-              <li>数据指标严谨标注：真实链上、模拟与不可用数据严格隔离。</li>
+              <li>不提供任何真实交易执行功能，所有撮合限 Paper Trading。</li>
+              <li>严格区分真实链上数据、模拟数据与缺失数据。</li>
             </ul>
           </div>
         </div>

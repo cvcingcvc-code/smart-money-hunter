@@ -135,7 +135,7 @@ export default function WalletDetailPage() {
               <h1 className="text-lg font-bold font-mono text-white">
                 {shortenAddress(wallet.address, 6)}
               </h1>
-              <span className="terminal-badge badge-cyan text-[10px]">
+              <span className="terminal-badge badge-rose text-[10px]">
                 {wallet.category}
               </span>
               <span
@@ -307,7 +307,7 @@ export default function WalletDetailPage() {
           onClick={() => setActiveTab('txs')}
           className={`flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
             activeTab === 'txs'
-              ? 'border-trade-accent text-trade-accent'
+              ? 'border-roseScarf-400 text-roseScarf-300'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -319,7 +319,7 @@ export default function WalletDetailPage() {
           onClick={() => setActiveTab('tags')}
           className={`flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${
             activeTab === 'tags'
-              ? 'border-trade-accent text-trade-accent'
+              ? 'border-roseScarf-400 text-roseScarf-300'
               : 'border-transparent text-slate-400 hover:text-slate-200'
           }`}
         >

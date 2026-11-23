@@ -167,7 +167,7 @@ export default function WalletsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-white flex items-center space-x-2">
-            <Wallet className="w-5 h-5 text-trade-accent" />
+            <Wallet className="w-5 h-5 text-roseScarf-300" />
             <span>钱包研究与库管理</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
@@ -178,7 +178,7 @@ export default function WalletsPage() {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold text-xs transition shadow-md shadow-emerald-500/20"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-roseScarf-500 to-roseScarf-600 hover:from-roseScarf-400 hover:to-roseScarf-500 text-white font-semibold text-xs transition shadow-lg shadow-rose-950/40 border border-rose-300/30"
           >
             <Plus className="w-4 h-4" />
             <span>录入新地址</span>
@@ -194,10 +194,10 @@ export default function WalletsPage() {
             <button
               key={c.key}
               onClick={() => setCategoryFilter(c.key)}
-              className={`px-2.5 py-1 rounded text-xs transition-colors ${
+              className={`px-2.5 py-1 rounded-lg text-xs transition-colors ${
                 categoryFilter === c.key
-                  ? 'bg-trade-accent/20 text-trade-accent border border-trade-accent/40 font-semibold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-terminal-dark'
+                  ? 'bg-roseScarf-500/20 text-roseScarf-200 border border-roseScarf-400/40 font-semibold'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
               }`}
             >
               {c.label}
@@ -281,7 +281,7 @@ export default function WalletsPage() {
                       </td>
 
                       <td className="px-3 py-3">
-                        <span className="terminal-badge badge-cyan text-[10px]">
+                        <span className="terminal-badge badge-rose text-[10px]">
                           {w.category}
                         </span>
                       </td>

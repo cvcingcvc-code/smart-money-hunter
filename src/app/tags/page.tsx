@@ -107,7 +107,7 @@ export default function TagsPage() {
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-white flex items-center space-x-2">
-          <Tag className="w-5 h-5 text-trade-accent" />
+          <Tag className="w-5 h-5 text-roseScarf-300" />
           <span>7 大客观规则打标系统</span>
         </h1>
         <p className="text-xs text-slate-400 mt-1">
@@ -131,14 +131,14 @@ export default function TagsPage() {
               onClick={() => setSelectedTag(cfg.tag)}
               className={`terminal-card p-4 cursor-pointer transition-all ${
                 isSelected
-                  ? 'border-trade-accent bg-terminal-card shadow-lg ring-1 ring-cyan-500/20'
-                  : 'hover:border-slate-700'
+                  ? 'border-roseScarf-400 bg-white/10 shadow-lg ring-1 ring-roseScarf-500/30'
+                  : 'hover:border-white/20'
               }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <div className="p-1.5 rounded bg-terminal-dark">
-                    <Icon className="w-4 h-4 text-trade-accent" />
+                  <div className="p-1.5 rounded-lg bg-roseScarf-500/10 text-roseScarf-300 border border-roseScarf-500/20">
+                    <Icon className="w-4 h-4" />
                   </div>
                   <span className="font-semibold text-white text-sm">
                     {cfg.name}

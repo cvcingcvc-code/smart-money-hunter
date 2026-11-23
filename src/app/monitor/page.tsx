@@ -118,7 +118,7 @@ export default function MonitorPage() {
           <button
             onClick={handleManualPoll}
             disabled={polling}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold text-xs transition disabled:opacity-50 shadow-md shadow-emerald-500/20"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-roseScarf-500 to-roseScarf-600 hover:from-roseScarf-400 hover:to-roseScarf-500 text-white font-semibold text-xs transition disabled:opacity-50 shadow-lg shadow-rose-950/40 border border-rose-300/30"
           >
             <Play className={`w-3.5 h-3.5 ${polling ? 'animate-spin' : ''}`} />
             <span>{polling ? '正在全网巡检...' : '即时巡检链上'}</span>

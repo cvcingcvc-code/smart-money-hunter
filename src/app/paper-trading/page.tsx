@@ -109,10 +109,10 @@ function PaperTradingContent() {
         <div>
           <div className="flex items-center space-x-2">
             <h1 className="text-xl font-bold text-white flex items-center space-x-2">
-              <LineChart className="w-5 h-5 text-cyan-400" />
+              <LineChart className="w-5 h-5 text-roseScarf-300" />
               <span>Paper Trading 模拟复盘终端</span>
             </h1>
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-roseScarf-500/20 text-roseScarf-300 border border-roseScarf-500/40">
               仿真撮合 (含滑点与手续费)
             </span>
           </div>
