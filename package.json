@@ -12,7 +12,8 @@
     "db:generate": "prisma generate",
     "test": "vitest run",
     "test:watch": "vitest",
-    "worker:monitor": "tsx scripts/monitor-worker.ts"
+    "worker:monitor": "tsx scripts/monitor-worker.ts",
+    "scan:100": "tsx scripts/scan-and-analyze-100.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

@@ -16,6 +16,7 @@ import {
 
 const navItems = [
   { name: '仪表盘', href: '/', icon: Terminal },
+  { name: '雷达挖掘', href: '/scanner', icon: Sparkles },
   { name: '钱包追踪', href: '/wallets', icon: Wallet },
   { name: '规则打标', href: '/tags', icon: Tag },
   { name: '链上监控', href: '/monitor', icon: Bell },

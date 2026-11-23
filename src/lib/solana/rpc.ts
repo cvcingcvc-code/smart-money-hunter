@@ -3,8 +3,7 @@ import { Connection, PublicKey, ParsedTransactionWithMeta, ConfirmedSignatureInf
 // Multiple public endpoints with fallback
 const RPC_ENDPOINTS = [
   process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
-  process.env.SOLANA_BACKUP_RPC_URL || 'https://rpc.ankr.com/solana',
-  'https://solana-mainnet.g.alchemy.com/v2/demo',
+  process.env.SOLANA_BACKUP_RPC_URL || 'https://solana-rpc.publicnode.com',
 ];
 
 class SolanaRpcClient {
@@ -49,6 +48,9 @@ class SolanaRpcClient {
         return await operation(this.connection);
       } catch (error: any) {
         const errorMsg = error?.message || String(error);
+        if (errorMsg.includes('Transaction version')) {
+          throw error;
+        }
         const isRateLimit =
           errorMsg.includes('429') ||
           errorMsg.includes('Too Many Requests') ||
@@ -99,12 +101,19 @@ class SolanaRpcClient {
   public async getParsedTransaction(
     signature: string
   ): Promise<ParsedTransactionWithMeta | null> {
-    return this.executeWithRetry((conn) =>
-      conn.getParsedTransaction(signature, {
-        maxSupportedTransactionVersion: 0,
-        commitment: 'confirmed',
-      })
-    );
+    try {
+      return await this.executeWithRetry((conn) =>
+        conn.getParsedTransaction(signature, {
+          maxSupportedTransactionVersion: 0,
+          commitment: 'confirmed',
+        })
+      );
+    } catch (err: any) {
+      if (err?.message?.includes('Transaction version')) {
+        return null;
+      }
+      throw err;
+    }
   }
 
   public async getBalance(address: string): Promise<number> {
