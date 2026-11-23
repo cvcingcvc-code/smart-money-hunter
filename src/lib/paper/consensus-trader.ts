@@ -54,10 +54,11 @@ export class ConsensusTraderService {
               orderBy: { blockTime: 'desc' },
             });
 
-            const priceSol =
-              latestTx && latestTx.tokenAmount > 0
-                ? latestTx.solAmount / latestTx.tokenAmount
-                : 0.00000045;
+            let priceSol = 0.00000045;
+            if (latestTx && latestTx.tokenAmount > 0 && latestTx.solAmount > 0) {
+              priceSol = latestTx.solAmount / latestTx.tokenAmount;
+            }
+            priceSol = Math.max(0.0000000001, priceSol);
 
             const trade = await paperEngine.executeTrade({
               tokenAddress: sig.tokenAddress,

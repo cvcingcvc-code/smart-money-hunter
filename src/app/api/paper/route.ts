@@ -21,7 +21,16 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: '请求体必须为合法 JSON' },
+        { status: 400 }
+      );
+    }
+
     const {
       walletAddress,
       tokenAddress,
@@ -35,24 +44,74 @@ export async function POST(req: NextRequest) {
       latencyMs,
     } = body;
 
-    if (!tokenAddress || !side || !priceSol) {
+    // 1. Validate required fields
+    if (!tokenAddress || typeof tokenAddress !== 'string' || !tokenAddress.trim()) {
       return NextResponse.json(
-        { success: false, error: '缺少必要参数（代币地址、买卖方向或单价）' },
+        { success: false, error: '缺少有效的代币合约地址 (tokenAddress)' },
         { status: 400 }
       );
     }
 
+    if (side !== 'BUY' && side !== 'SELL') {
+      return NextResponse.json(
+        { success: false, error: '买卖方向必须为 BUY 或 SELL' },
+        { status: 400 }
+      );
+    }
+
+    const parsedPrice = Number(priceSol);
+    if (isNaN(parsedPrice) || !isFinite(parsedPrice) || parsedPrice <= 0) {
+      return NextResponse.json(
+        { success: false, error: '代币单价必须为大于 0 的有效数值' },
+        { status: 400 }
+      );
+    }
+
+    // 2. Validate side-specific numeric fields
+    let parsedSolAmount: number | undefined;
+    if (side === 'BUY') {
+      parsedSolAmount = solAmount !== undefined ? Number(solAmount) : 1.0;
+      if (isNaN(parsedSolAmount) || !isFinite(parsedSolAmount) || parsedSolAmount <= 0) {
+        return NextResponse.json(
+          { success: false, error: '买入金额 (solAmount) 必须为大于 0 的有效数值' },
+          { status: 400 }
+        );
+      }
+    }
+
+    let parsedSellRatio: number | undefined;
+    if (side === 'SELL') {
+      parsedSellRatio = sellRatio !== undefined ? Number(sellRatio) : 1.0;
+      if (isNaN(parsedSellRatio) || !isFinite(parsedSellRatio) || parsedSellRatio <= 0 || parsedSellRatio > 1.0) {
+        return NextResponse.json(
+          { success: false, error: '卖出比例 (sellRatio) 必须在 0.01 到 1.0 之间' },
+          { status: 400 }
+        );
+      }
+    }
+
+    let parsedSlippage: number | undefined;
+    if (slippage !== undefined) {
+      parsedSlippage = Number(slippage);
+      if (isNaN(parsedSlippage) || parsedSlippage < 0 || parsedSlippage > 0.5) {
+        return NextResponse.json(
+          { success: false, error: '滑点参数必须在 0 到 0.5 (50%) 之间' },
+          { status: 400 }
+        );
+      }
+    }
+
     const trade = await paperEngine.executeTrade({
-      walletAddress,
-      tokenAddress,
-      tokenSymbol,
+      walletAddress: typeof walletAddress === 'string' ? walletAddress.trim() : undefined,
+      tokenAddress: tokenAddress.trim(),
+      tokenSymbol: typeof tokenSymbol === 'string' ? tokenSymbol.trim() : undefined,
       side,
-      solAmount: solAmount ? parseFloat(solAmount) : undefined,
-      sellRatio: sellRatio ? parseFloat(sellRatio) : 1.0,
-      priceSol: parseFloat(priceSol),
-      slippage: slippage ? parseFloat(slippage) : undefined,
-      feeSol: feeSol ? parseFloat(feeSol) : undefined,
-      latencyMs: latencyMs ? parseInt(latencyMs, 10) : undefined,
+      solAmount: parsedSolAmount,
+      sellRatio: parsedSellRatio,
+      priceSol: parsedPrice,
+      slippage: parsedSlippage,
+      feeSol: feeSol !== undefined ? Math.max(0, Number(feeSol)) : undefined,
+      latencyMs: latencyMs !== undefined ? Math.max(0, Number(latencyMs)) : undefined,
     });
 
     return NextResponse.json({

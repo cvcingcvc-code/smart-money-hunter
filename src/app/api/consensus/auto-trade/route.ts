@@ -14,12 +14,18 @@ export async function POST(req: NextRequest) {
 
     const { minWallets, buyAmountSol, stopLossPct, takeProfitPct, maxHoldHours } = body;
 
+    const parsedMinWallets = minWallets ? Math.max(1, Math.min(10, parseInt(minWallets, 10) || 2)) : 2;
+    const parsedBuySol = buyAmountSol ? Math.max(0.01, Math.min(100, parseFloat(buyAmountSol) || 2.0)) : 2.0;
+    const parsedStopLoss = stopLossPct ? Math.min(-0.01, Math.max(-0.90, parseFloat(stopLossPct) || -0.20)) : -0.20;
+    const parsedTakeProfit = takeProfitPct ? Math.max(0.05, Math.min(10.0, parseFloat(takeProfitPct) || 0.50)) : 0.50;
+    const parsedMaxHoldHours = maxHoldHours ? Math.max(0.1, Math.min(72.0, parseFloat(maxHoldHours) || 2.0)) : 2.0;
+
     const result = await consensusTrader.runTradingCycle({
-      minWallets: minWallets ? parseInt(minWallets, 10) : 2,
-      buyAmountSol: buyAmountSol ? parseFloat(buyAmountSol) : 2.0,
-      stopLossPct: stopLossPct ? parseFloat(stopLossPct) : -0.20,
-      takeProfitPct: takeProfitPct ? parseFloat(takeProfitPct) : 0.50,
-      maxHoldHours: maxHoldHours ? parseFloat(maxHoldHours) : 2.0,
+      minWallets: parsedMinWallets,
+      buyAmountSol: parsedBuySol,
+      stopLossPct: parsedStopLoss,
+      takeProfitPct: parsedTakeProfit,
+      maxHoldHours: parsedMaxHoldHours,
     });
 
     return NextResponse.json({

@@ -54,9 +54,10 @@ export class SmartExitEngine {
         where: { tokenAddress },
         orderBy: { blockTime: 'desc' },
       });
-      if (latestTx && latestTx.tokenAmount > 0) {
+      if (latestTx && latestTx.tokenAmount > 0 && latestTx.solAmount > 0) {
         currentPriceSol = latestTx.solAmount / latestTx.tokenAmount;
       }
+      currentPriceSol = Math.max(0.0000000001, currentPriceSol);
 
       // Calculate unrealized PnL ratio
       const currentValuationSol = pos.remainingTokens * currentPriceSol;

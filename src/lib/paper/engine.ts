@@ -15,16 +15,24 @@ export interface ExecutePaperTradeParams {
 
 export class PaperTradingEngine {
   /**
-   * Execute simulated Paper Trade with realistic fee, slippage, and latency model
+   * Execute simulated Paper Trade with atomic transaction, realistic fee, slippage, and latency model
    */
   public async executeTrade(params: ExecutePaperTradeParams) {
-    const slippage = params.slippage ?? 0.015;
-    const feeSol = params.feeSol ?? 0.0005;
-    const latencyMs = params.latencyMs ?? 1200;
-    const priceSol = Math.max(0.0000000001, params.priceSol);
+    const slippage = Math.max(0, Math.min(0.5, params.slippage ?? 0.015));
+    const feeSol = Math.max(0, params.feeSol ?? 0.0005);
+    const latencyMs = Math.max(0, params.latencyMs ?? 1200);
+    const rawPrice = Number(params.priceSol);
+    if (isNaN(rawPrice) || !isFinite(rawPrice) || rawPrice <= 0) {
+      throw new Error(`无效的代币价格: ${params.priceSol} SOL`);
+    }
+    const priceSol = Math.max(0.0000000001, rawPrice);
 
     if (params.side === 'BUY') {
-      const solAmount = params.solAmount || 1.0;
+      const rawSol = Number(params.solAmount ?? 1.0);
+      if (isNaN(rawSol) || !isFinite(rawSol) || rawSol <= 0) {
+        throw new Error(`无效的买入金额: ${params.solAmount} SOL`);
+      }
+      const solAmount = rawSol;
       if (solAmount <= feeSol) {
         throw new Error(`买入金额 (${solAmount} SOL) 必须大于模拟交易手续费 (${feeSol} SOL)`);
       }
@@ -34,130 +42,138 @@ export class PaperTradingEngine {
       const investableSol = solAmount - feeSol;
       const tokenAmount = investableSol / effectivePriceSol;
 
-      // 1. Create PaperTrade record
-      const trade = await prisma.paperTrade.create({
-        data: {
-          walletAddress: params.walletAddress || null,
-          tokenAddress: params.tokenAddress,
-          tokenSymbol: params.tokenSymbol || 'TOKEN',
-          side: 'BUY',
-          solAmount,
-          tokenAmount,
-          priceSol: effectivePriceSol,
-          slippage,
-          feeSol,
-          latencyMs,
-          status: 'FILLED',
-          pnlSol: null,
-          pnlPercent: null,
-        },
-      });
-
-      // 2. Update or create PaperPosition
-      const existingPos = await prisma.paperPosition.findUnique({
-        where: { tokenAddress: params.tokenAddress },
-      });
-
-      if (existingPos && !existingPos.isClosed) {
-        const newTotalTokens = existingPos.remainingTokens + tokenAmount;
-        const newTotalCost = existingPos.costSol + solAmount;
-        await prisma.paperPosition.update({
-          where: { tokenAddress: params.tokenAddress },
+      // Atomic Execution via Prisma Transaction
+      return await prisma.$transaction(async (tx) => {
+        // 1. Create PaperTrade record
+        const trade = await tx.paperTrade.create({
           data: {
-            remainingTokens: newTotalTokens,
-            costSol: newTotalCost,
-            avgPriceSol: newTotalCost / newTotalTokens,
-            currentPriceSol: priceSol,
-            isClosed: false,
-            updatedAt: new Date(),
-          },
-        });
-      } else {
-        await prisma.paperPosition.upsert({
-          where: { tokenAddress: params.tokenAddress },
-          update: {
-            tokenSymbol: params.tokenSymbol || 'TOKEN',
-            remainingTokens: tokenAmount,
-            costSol: solAmount,
-            avgPriceSol: effectivePriceSol,
-            currentPriceSol: priceSol,
-            isClosed: false,
-            openedAt: new Date(),
-            updatedAt: new Date(),
-          },
-          create: {
+            walletAddress: params.walletAddress || null,
             tokenAddress: params.tokenAddress,
             tokenSymbol: params.tokenSymbol || 'TOKEN',
-            remainingTokens: tokenAmount,
-            costSol: solAmount,
-            avgPriceSol: effectivePriceSol,
-            currentPriceSol: priceSol,
-            realizedPnlSol: 0,
-            isClosed: false,
+            side: 'BUY',
+            solAmount,
+            tokenAmount,
+            priceSol: effectivePriceSol,
+            slippage,
+            feeSol,
+            latencyMs,
+            status: 'FILLED',
+            pnlSol: null,
+            pnlPercent: null,
           },
         });
-      }
 
-      return trade;
+        // 2. Update or create PaperPosition atomically
+        const existingPos = await tx.paperPosition.findUnique({
+          where: { tokenAddress: params.tokenAddress },
+        });
+
+        if (existingPos && !existingPos.isClosed) {
+          const newTotalTokens = existingPos.remainingTokens + tokenAmount;
+          const newTotalCost = existingPos.costSol + solAmount;
+          const avgPrice = newTotalTokens > 0 ? newTotalCost / newTotalTokens : effectivePriceSol;
+
+          await tx.paperPosition.update({
+            where: { tokenAddress: params.tokenAddress },
+            data: {
+              remainingTokens: newTotalTokens,
+              costSol: newTotalCost,
+              avgPriceSol: avgPrice,
+              currentPriceSol: priceSol,
+              isClosed: false,
+              updatedAt: new Date(),
+            },
+          });
+        } else {
+          await tx.paperPosition.upsert({
+            where: { tokenAddress: params.tokenAddress },
+            update: {
+              tokenSymbol: params.tokenSymbol || 'TOKEN',
+              remainingTokens: tokenAmount,
+              costSol: solAmount,
+              avgPriceSol: effectivePriceSol,
+              currentPriceSol: priceSol,
+              isClosed: false,
+              openedAt: new Date(),
+              updatedAt: new Date(),
+            },
+            create: {
+              tokenAddress: params.tokenAddress,
+              tokenSymbol: params.tokenSymbol || 'TOKEN',
+              remainingTokens: tokenAmount,
+              costSol: solAmount,
+              avgPriceSol: effectivePriceSol,
+              currentPriceSol: priceSol,
+              realizedPnlSol: 0,
+              isClosed: false,
+            },
+          });
+        }
+
+        return trade;
+      });
     } else {
       // SELL execution
-      const position = await prisma.paperPosition.findUnique({
-        where: { tokenAddress: params.tokenAddress },
+      return await prisma.$transaction(async (tx) => {
+        const position = await tx.paperPosition.findUnique({
+          where: { tokenAddress: params.tokenAddress },
+        });
+
+        if (!position || position.isClosed || position.remainingTokens <= 0) {
+          throw new Error(`当前无 ${params.tokenSymbol || params.tokenAddress} 可卖出的持仓头寸`);
+        }
+
+        const rawRatio = Number(params.sellRatio ?? 1.0);
+        const ratio = isNaN(rawRatio) ? 1.0 : Math.min(1.0, Math.max(0.01, rawRatio));
+        const tokensToSell = position.remainingTokens * ratio;
+
+        // Slippage for SELL: price decreases against seller
+        const effectivePriceSol = priceSol * (1 - slippage);
+        const grossSol = tokensToSell * effectivePriceSol;
+        const netSol = Math.max(0, grossSol - feeSol);
+
+        const costBasis = position.costSol * ratio;
+        const pnlSol = netSol - costBasis;
+        const pnlPercent = costBasis > 0 ? (pnlSol / costBasis) * 100 : 0;
+
+        // 1. Create PaperTrade record
+        const trade = await tx.paperTrade.create({
+          data: {
+            walletAddress: params.walletAddress || null,
+            tokenAddress: params.tokenAddress,
+            tokenSymbol: params.tokenSymbol || position.tokenSymbol || 'TOKEN',
+            side: 'SELL',
+            solAmount: netSol,
+            tokenAmount: tokensToSell,
+            priceSol: effectivePriceSol,
+            slippage,
+            feeSol,
+            latencyMs,
+            status: 'FILLED',
+            pnlSol,
+            pnlPercent,
+          },
+        });
+
+        // 2. Update Position
+        const remainingTokens = position.remainingTokens - tokensToSell;
+        const remainingCost = position.costSol - costBasis;
+        const isClosed = remainingTokens <= 0.000001;
+
+        await tx.paperPosition.update({
+          where: { tokenAddress: params.tokenAddress },
+          data: {
+            remainingTokens: isClosed ? 0 : remainingTokens,
+            costSol: isClosed ? 0 : Math.max(0, remainingCost),
+            currentPriceSol: priceSol,
+            realizedPnlSol: position.realizedPnlSol + pnlSol,
+            isClosed,
+            updatedAt: new Date(),
+          },
+        });
+
+        return trade;
       });
-
-      if (!position || position.isClosed || position.remainingTokens <= 0) {
-        throw new Error(`当前无 ${params.tokenSymbol || params.tokenAddress} 可卖出的持仓头寸`);
-      }
-
-      const ratio = Math.min(1.0, Math.max(0.01, params.sellRatio ?? 1.0));
-      const tokensToSell = position.remainingTokens * ratio;
-
-      // Slippage for SELL: price decreases against seller
-      const effectivePriceSol = priceSol * (1 - slippage);
-      const grossSol = tokensToSell * effectivePriceSol;
-      const netSol = Math.max(0, grossSol - feeSol);
-
-      const costBasis = position.costSol * ratio;
-      const pnlSol = netSol - costBasis;
-      const pnlPercent = costBasis > 0 ? (pnlSol / costBasis) * 100 : 0;
-
-      // 1. Create PaperTrade record
-      const trade = await prisma.paperTrade.create({
-        data: {
-          walletAddress: params.walletAddress || null,
-          tokenAddress: params.tokenAddress,
-          tokenSymbol: params.tokenSymbol || position.tokenSymbol || 'TOKEN',
-          side: 'SELL',
-          solAmount: netSol,
-          tokenAmount: tokensToSell,
-          priceSol: effectivePriceSol,
-          slippage,
-          feeSol,
-          latencyMs,
-          status: 'FILLED',
-          pnlSol,
-          pnlPercent,
-        },
-      });
-
-      // 2. Update Position
-      const remainingTokens = position.remainingTokens - tokensToSell;
-      const remainingCost = position.costSol - costBasis;
-      const isClosed = remainingTokens <= 0.000001;
-
-      await prisma.paperPosition.update({
-        where: { tokenAddress: params.tokenAddress },
-        data: {
-          remainingTokens: isClosed ? 0 : remainingTokens,
-          costSol: isClosed ? 0 : remainingCost,
-          currentPriceSol: priceSol,
-          realizedPnlSol: position.realizedPnlSol + pnlSol,
-          isClosed,
-          updatedAt: new Date(),
-        },
-      });
-
-      return trade;
     }
   }
 
@@ -195,7 +211,7 @@ export class PaperTradingEngine {
           peakEquity = runningEquity;
         } else {
           const ddSol = peakEquity - runningEquity;
-          const ddPct = (ddSol / peakEquity) * 100;
+          const ddPct = peakEquity > 0 ? (ddSol / peakEquity) * 100 : 0;
           if (ddPct > maxDrawdownPercent) {
             maxDrawdownPercent = ddPct;
             maxDrawdownSol = ddSol;
