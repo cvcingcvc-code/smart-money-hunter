@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { WatchRecommendation } from '@/types';
+import { smartMoneyAlphaModel } from '../intelligence/alpha-model';
 
 export interface AiReportResult {
   tradingHabits: string;
@@ -142,19 +143,33 @@ ${JSON.stringify(structuredContext, null, 2)}`;
       watchRecommendation = 'AVOID';
     }
 
+    const alphaWeight = smartMoneyAlphaModel.calculateWalletAlphaWeight({
+      winRate: context.winRate && !context.winRate.includes('不可用') ? parseFloat(context.winRate) : 50,
+      sampleSize: context.sampleSize || 5,
+      realizedPnlSol: context.realizedPnlSol && !context.realizedPnlSol.includes('不可用') ? parseFloat(context.realizedPnlSol) : 0,
+      avgHoldDurationHours: context.avgHoldDurationHours && !context.avgHoldDurationHours.includes('不可用') ? parseFloat(context.avgHoldDurationHours) : 2.0,
+    });
+
+    const kellySizing = smartMoneyAlphaModel.calculateKellySizing(
+      context.winRate && !context.winRate.includes('不可用') ? parseFloat(context.winRate) : 50,
+      2.2,
+      100.0,
+      0.05
+    );
+
     const tradingHabits = isHighFreq
       ? `该地址日均交易频次较高，表现出明显的日内高频策略特征。${
           isShortTerm ? '平均持仓时长较短，偏好快进快出锁定收益。' : '持仓周期随行情动态调整。'
-        } 主要通过 Raydium 和 Pump.fun 等 DEX 进行头寸流转。`
+        } 主要通过 Raydium 和 Pump.fun 等 DEX 进行头寸流转。阿尔法模型测算其综合权重为 ${alphaWeight}。`
       : `该地址交易节奏稳健，总样本流水 ${context.totalTrades} 笔，${
           isEarly ? '对新币与早期开盘池有敏锐感知。' : '重点介入已初具成交规模的标的。'
-        }`;
+        } 阿尔法模型测算其综合信誉权重为 ${alphaWeight}。`;
 
     const potentialAdvantages = isSmartMoney
-      ? `历史胜率达 ${context.winRate}，已实现利润累计 ${context.realizedPnlSol}，展现出较高的正期望值捕捉能力与选币眼光。`
+      ? `历史胜率达 ${context.winRate}，已实现利润累计 ${context.realizedPnlSol}，展现出较高的正期望值捕捉能力。凯利公式建议单笔跟单上限控制在 ${kellySizing} SOL 以内。`
       : isEarly
-      ? `开盘极早期买入捕捉能力出色，具备早期流动性先发优势。`
-      : `操作风格纪律性适中，具有一定的链上持仓风控意识。`;
+      ? `开盘极早期买入捕捉能力出色，具备早期流动性先发优势。模型建议防守型仓位分配 ${kellySizing} SOL。`
+      : `操作风格纪律性适中，具有一定的链上持仓风控意识。模型建议防守型仓位分配 ${kellySizing} SOL。`;
 
     const majorRisks = isHighRisk
       ? `当前风险评分高达 ${context.riskScore}，历史胜率偏低或存在单笔追高大幅亏损记录，跟单潜在滑点与回撤风险极高。`

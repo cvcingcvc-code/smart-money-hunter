@@ -4,6 +4,7 @@ import { paperEngine } from './engine';
 export interface ExitConfig {
   stopLossPct?: number; // default -20% (-0.20)
   takeProfitPct?: number; // default +50% (+0.50)
+  trailingStopPct?: number; // default 0.25 (从高位回撤 25% 锁定利润)
   maxHoldHours?: number; // default 2.0 hours
   followSmartMoneySell?: boolean; // default true: exit immediately on smart money sell
   slippage?: number; // default 0.015 (1.5%)
@@ -13,7 +14,7 @@ export interface ExitConfig {
 export interface ExitTriggerResult {
   tokenAddress: string;
   tokenSymbol: string;
-  ruleTriggered: 'FIRST_SELL_EXIT' | 'STOP_LOSS' | 'TAKE_PROFIT' | 'TIME_DECAY' | 'NONE';
+  ruleTriggered: 'FIRST_SELL_EXIT' | 'STOP_LOSS' | 'TAKE_PROFIT' | 'TRAILING_STOP' | 'TIME_DECAY' | 'NONE';
   reason: string;
   sellRatio: number;
   pnlSol?: number | null;
@@ -22,11 +23,13 @@ export interface ExitTriggerResult {
 
 export class SmartExitEngine {
   /**
-   * Evaluate all open positions against the 4-layer exit rules and execute simulated exits
+   * Evaluate all open positions against the 5-layer exit rules (including dynamic trailing stop)
+   * and execute simulated exits
    */
   public async evaluateAndExecuteExits(config?: ExitConfig): Promise<ExitTriggerResult[]> {
     const stopLoss = config?.stopLossPct ?? -0.20; // -20%
     const takeProfit = config?.takeProfitPct ?? 0.50; // +50%
+    const trailingDrop = config?.trailingStopPct ?? 0.25; // 25% pull-back from peak
     const maxHoldHours = config?.maxHoldHours ?? 2.0;
     const followSell = config?.followSmartMoneySell ?? true;
     const slippage = config?.slippage ?? 0.015;
@@ -46,7 +49,6 @@ export class SmartExitEngine {
       const now = Date.now();
       const holdHours = (now - pos.openedAt.getTime()) / (1000 * 3600);
 
-      // Estimate current price: if currentPriceSol is set, use it; otherwise use latest transaction price or avgPrice
       let currentPriceSol = pos.currentPriceSol || pos.avgPriceSol;
 
       // Check latest transaction price in DB for this token
@@ -106,7 +108,28 @@ export class SmartExitEngine {
         sellRatio = 0.50; // Sell half to secure cost
       }
 
-      // 4. RULE 4: Time-Decay (持仓时效衰减，防范流动性枯竭)
+      // 4. RULE 4: Dynamic Trailing Stop (移动追踪止盈：若收益曾冲高现回撤超标，全额锁定利润)
+      if (ruleTriggered === 'NONE' && returnRatio >= 0.30) {
+        // 如果买入后历史最高价较买入价上涨超过 80%，而当前价格回撤超过 25%
+        const highestTx = await prisma.transaction.findFirst({
+          where: { tokenAddress, blockTime: { gte: pos.openedAt } },
+          orderBy: { solAmount: 'desc' },
+        });
+
+        if (highestTx && highestTx.tokenAmount > 0) {
+          const peakPrice = highestTx.solAmount / highestTx.tokenAmount;
+          if (peakPrice > pos.avgPriceSol * 1.6) {
+            const pullBack = (peakPrice - currentPriceSol) / peakPrice;
+            if (pullBack >= trailingDrop) {
+              ruleTriggered = 'TRAILING_STOP';
+              reason = `📈 触及移动追踪止盈线 (自峰值回撤 ${(pullBack * 100).toFixed(1)}% >= ${(trailingDrop * 100).toFixed(1)}%)，锁定剩余巨额利润全平`;
+              sellRatio = 1.0;
+            }
+          }
+        }
+      }
+
+      // 5. RULE 5: Time-Decay (持仓时效衰减，防范流动性枯竭)
       if (ruleTriggered === 'NONE' && holdHours >= maxHoldHours && returnRatio < 0.15) {
         ruleTriggered = 'TIME_DECAY';
         reason = `⏳ 持仓已达 ${holdHours.toFixed(1)} 小时未爆发，执行流动性撤离规避死锁`;

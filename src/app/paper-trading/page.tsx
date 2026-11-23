@@ -332,16 +332,54 @@ function PaperTradingContent() {
                       </span>
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
-                          sig.consensusStrength === 'HIGH'
+                          sig.alphaGrade === 'TIER_S'
                             ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                            : 'bg-iceBlue-500/20 text-iceBlue-300 border border-iceBlue-500/40'
+                            : sig.alphaGrade === 'TIER_A'
+                            ? 'bg-iceBlue-500/20 text-iceBlue-300 border border-iceBlue-500/40'
+                            : sig.alphaGrade === 'TIER_D'
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                            : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                         }`}
                       >
-                        {sig.consensusStrength === 'HIGH' ? '🔥 3+ 强共识' : '⚡ 2 钱包共识'}
+                        {sig.alphaGrade || (sig.consensusStrength === 'HIGH' ? 'TIER_A' : 'TIER_B')}
                       </span>
                       <span className="text-[11px] font-mono text-slate-500">
                         {shortenAddress(sig.tokenAddress, 4)}
                       </span>
+                    </div>
+
+                    {/* Alpha Metrics Row */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                      <div className="text-slate-300">
+                        模型预测胜率：
+                        <span className="font-mono font-bold text-emerald-400">
+                          {sig.predictedWinRate || 65}%
+                        </span>
+                      </div>
+                      <div className="text-slate-300">
+                        凯利建议仓位：
+                        <span className="font-mono font-bold text-cyan-300">
+                          {sig.kellySuggestedSol || 2.0} SOL
+                        </span>
+                      </div>
+                      <div className="text-slate-300">
+                        老鼠仓排查：
+                        <span
+                          className={`font-mono text-[11px] ${
+                            sig.cabalRiskLevel === 'DANGEROUS'
+                              ? 'text-rose-400 font-bold'
+                              : sig.cabalRiskLevel === 'SUSPICIOUS'
+                              ? 'text-amber-400'
+                              : 'text-emerald-400'
+                          }`}
+                        >
+                          {sig.cabalRiskLevel === 'DANGEROUS'
+                            ? '🚨 极高庄家老鼠仓风险'
+                            : sig.cabalRiskLevel === 'SUSPICIOUS'
+                            ? '⚠️ 疑似协同'
+                            : '🛡️ 自然分布 (安全)'}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
@@ -373,6 +411,7 @@ function PaperTradingContent() {
                           className="px-2 py-0.5 rounded text-[10px] bg-white/5 border border-white/10 text-slate-300 font-mono"
                         >
                           {w.label || shortenAddress(w.address, 3)} ({formatSol(w.buyAmountSol, 1)})
+                          {w.alphaWeight ? ` · 权${w.alphaWeight}` : ''}
                         </span>
                       ))}
                     </div>
@@ -385,11 +424,12 @@ function PaperTradingContent() {
                         setSide('BUY');
                         setTokenAddress(sig.tokenAddress);
                         setTokenSymbol(sig.tokenSymbol || '');
-                        setSolAmount('2.0');
+                        setSolAmount(sig.kellySuggestedSol ? sig.kellySuggestedSol.toString() : '2.0');
                       }}
-                      className="px-3 py-1.5 rounded bg-terminal-card hover:bg-terminal-hover border border-terminal-border text-slate-200 text-xs transition"
+                      className="px-3 py-1.5 rounded bg-terminal-card hover:bg-terminal-hover border border-terminal-border text-slate-200 text-xs transition flex items-center space-x-1"
                     >
-                      填入下单板 &rarr;
+                      <span>填入下单板 ({sig.kellySuggestedSol || 2.0} SOL)</span>
+                      <span>&rarr;</span>
                     </button>
                   </div>
                 </div>
@@ -404,8 +444,8 @@ function PaperTradingContent() {
             <div className="flex items-center space-x-2 border-b border-terminal-border/80 pb-3">
               <ShieldAlert className="w-5 h-5 text-roseScarf-400" />
               <div>
-                <h3 className="text-sm font-bold text-white">4 层智能出场风控体系</h3>
-                <p className="text-[11px] text-slate-400">杜绝“跟得进、逃不出”的踩踏陷阱</p>
+                <h3 className="text-sm font-bold text-white">5 层智能出场风控体系</h3>
+                <p className="text-[11px] text-slate-400">杜绝“跟得进、逃不出”的踩踏陷阱与利润回吐</p>
               </div>
             </div>
 
@@ -450,10 +490,23 @@ function PaperTradingContent() {
               </div>
 
               <div className="p-2.5 rounded bg-terminal-dark/60 border border-terminal-border space-y-1">
+                <div className="flex items-center justify-between text-cyan-300 font-semibold">
+                  <span className="flex items-center space-x-1">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    <span>第 4 道：动态移动追踪止盈</span>
+                  </span>
+                  <span className="font-mono text-[10px] text-emerald-400">已激活</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  利润爆发后若从峰值高点回撤超 25%，锁定剩余利润全额止盈出场。
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded bg-terminal-dark/60 border border-terminal-border space-y-1">
                 <div className="flex items-center justify-between text-iceBlue-300 font-semibold">
                   <span className="flex items-center space-x-1">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>第 4 道：2小时时效衰减</span>
+                    <span>第 5 道：2小时时效衰减</span>
                   </span>
                   <span className="font-mono text-[10px] text-emerald-400">已设防</span>
                 </div>

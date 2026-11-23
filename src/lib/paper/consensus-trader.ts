@@ -40,6 +40,11 @@ export class ConsensusTraderService {
 
     // 2. Process buys for strong consensus tokens
     for (const sig of signals) {
+      // 严格风控：规避老鼠仓与庄家钓鱼信号
+      if (sig.recommendedAction === 'AVOID_DUMP' || sig.cabalRiskLevel === 'DANGEROUS') {
+        continue;
+      }
+
       if (sig.walletCount >= minWallets) {
         // Check if we already have an open position in this token
         const existingPos = await prisma.paperPosition.findUnique({
@@ -60,11 +65,14 @@ export class ConsensusTraderService {
             }
             priceSol = Math.max(0.0000000001, priceSol);
 
+            // 动态凯利仓位：优先使用阿尔法模型计算的凯利建议金额
+            const actualBuySol = options?.buyAmountSol ?? sig.kellySuggestedSol ?? 2.0;
+
             const trade = await paperEngine.executeTrade({
               tokenAddress: sig.tokenAddress,
               tokenSymbol: sig.tokenSymbol,
               side: 'BUY',
-              solAmount: buySol,
+              solAmount: actualBuySol,
               priceSol,
               slippage: 0.015, // 1.5% slippage
               feeSol: 0.0005,
@@ -74,7 +82,7 @@ export class ConsensusTraderService {
             autoBuys.push({
               tokenAddress: sig.tokenAddress,
               tokenSymbol: sig.tokenSymbol,
-              solAmount: buySol,
+              solAmount: actualBuySol,
               walletCount: sig.walletCount,
               tradeId: trade.id,
             });

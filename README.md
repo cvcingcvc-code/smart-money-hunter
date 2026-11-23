@@ -4,9 +4,9 @@
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-Winter_Aesthetic-c27d88?logo=tailwindcss)](https://tailwindcss.com)
-[![Vitest](https://img.shields.io/badge/Tests-28%20Passed-emerald?logo=vitest)](https://vitest.dev)
+[![Vitest](https://img.shields.io/badge/Tests-33%20Passed-emerald?logo=vitest)](https://vitest.dev)
 
-面向 **Solana Meme 币研究团队** 打造的一体化链上情报分析、100个赚钱钱包雷达挖掘、多钱包共识跟单、4层智能出场风控与模拟复盘（Paper Trading）工作台。
+面向 **Solana Meme 币研究团队** 打造的一体化链上情报分析、100个赚钱钱包雷达挖掘、高阶阿尔法模型推演、多钱包共识跟单、5层智能出场风控与模拟复盘（Paper Trading）工作台。
 
 界面采用独特的 **「冬雪寒霜 × 烟粉玫瑰」** 二次元质感设计，半透明毛玻璃卡片搭配轻量漫天飘雪动效，兼具交易终端的专业严谨与二次元美学。
 
@@ -15,14 +15,17 @@
 ## 一、系统核心定位与设计哲学
 
 1. **纯研究与模拟工具**：本系统**绝不请求、不存储任何钱包私钥或助记词**，不提供任何真实链上交易广播与执行能力，所有跟单与撮合仅在 **Paper Trading 仿真环境** 中闭环运行。
-2. **多聪明钱共识验证（Consensus Verification）**：
-   - 单一钱包跟单由于 1~3 秒网络延迟、流动性冲击和发币方老鼠仓钓鱼，实盘跟单胜率普遍低于 30%。
-   - 本系统采用 **$\ge 2$ 个独立高胜率聪明钱同时间窗口买入同一代币** 的共识算法，从根源上过滤伪装大户与自嗨交易。
-3. **4 层智能出场风控体系（Smart Exit Guardian）**：
+2. **高阶阿尔法模型推演套件（Smart Money Alpha Model Suite）**：
+   - **聪明钱信誉加权算法**：摆脱粗放的钱包计数，综合历史真实胜率、样本量对数置信度衰减与累计正盈亏计算其实时阿尔法权重。
+   - **跟单获胜机率推演**：结合参与大户加权胜率与买入时间跨度衰减函数，量化输出预期跟单胜率（如 68.5%）与阿尔法评级（`TIER_S` ~ `TIER_D`）。
+   - **庄家协同与老鼠仓检测模型（Cabal / Wash Trade Detector）**：排查多钱包是否在 $\le 5$ 秒同一区块同向买入、金额是否高度对称，识别庄家自对倒诱多并自动设防（`AVOID_DUMP`）。
+   - **凯利准则最优仓位建议（Half-Kelly Sizing）**：根据预测胜率与 Meme 币盈亏比动态测算单笔最佳下注额（如推荐 1.25 SOL），杜绝无脑梭哈。
+3. **5 层智能出场风控体系（Smart Exit Guardian）**：
    - **第 1 道：首笔减仓逃生**。任一聪明钱只要开始卖出第一笔，不问数量立即 100% 卖出全平，绝不当接盘侠。
    - **第 2 道：-20% 硬性止损**。若遇假共识直接割肉止损，保留元气。
    - **第 3 道：+50% 保本止盈**。浮盈触及 50% 时平仓一半锁定成本，剩余仓位让利润继续奔跑。
-   - **第 4 道：2小时时效衰减**。持仓满 2 小时未爆发直接离场，规避 Meme 币流动性枯竭死锁。
+   - **第 4 道：动态移动追踪止盈（Trailing Stop Loss）**。利润爆发后自最高点回撤达 25%，锁定剩余丰厚利润全额离场。
+   - **第 5 道：2小时时效衰减**。持仓满 2 小时未爆发直接离场，规避 Meme 币流动性枯竭死锁。
 4. **硬性规则防幻觉**：客观标签完全由量化数学公式与阈值触发，AI 仅用于基于结构化上下文撰写可读性投研画像，不得自行决定客观标签。
 
 ---
@@ -171,6 +174,7 @@ pnpm test
 - `tests/step6_integration_and_audit.test.ts`：端到端全生命周期闭环审计
 - `tests/step7_scanner.test.ts`：100 钱包批量采集与胜率盈亏分析
 - `tests/step8_consensus_and_exit.test.ts`：多聪明钱共识识别、首笔减仓逃生机制、-20%硬止损与完整交易循环
+- `tests/step9_alpha_model.test.ts`：阿尔法权重算法、庄家老鼠仓排查、凯利最优仓位建议与移动追踪止盈 (Trailing Stop)
 
 ---
 
