@@ -1,0 +1,177 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 钱包表
+model Wallet {
+  id            String          @id @default(cuid())
+  address       String          @unique
+  label         String?
+  category      String          @default("MEME_TRADER") // MEME_TRADER, SMART_MONEY, KOL, SNIPER, UNKNOWN
+  notes         String?
+  isActive      Boolean         @default(true) // 是否开启监控
+  lastSyncedAt  DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  transactions  Transaction[]
+  metrics       WalletMetrics?
+  tags          WalletTag[]
+  alerts        MonitorAlert[]
+  aiReports     AiReport[]
+  paperTrades   PaperTrade[]
+}
+
+// 交易记录
+model Transaction {
+  id            String    @id @default(cuid())
+  signature     String    @unique
+  walletAddress String
+  wallet        Wallet    @relation(fields: [walletAddress], references: [address], onDelete: Cascade)
+  blockTime     DateTime
+  slot          Int       @default(0)
+  type          String    // BUY, SELL, TRANSFER, UNKNOWN
+  tokenAddress  String    // Mint
+  tokenSymbol   String?
+  tokenName     String?
+  tokenAmount   Float     @default(0)
+  solAmount     Float     @default(0)
+  usdAmount     Float?    // 价格不可得时为 null
+  feeSol        Float     @default(0.000005)
+  source        String    // RAYDIUM, PUMPFUN, JUPITER, ORCA, UNKNOWN
+  rawData       String?   // 原始 JSON
+  createdAt     DateTime  @default(now())
+
+  @@index([walletAddress])
+  @@index([blockTime])
+}
+
+// 钱包量化指标
+model WalletMetrics {
+  id                    String    @id @default(cuid())
+  walletAddress         String    @unique
+  wallet                Wallet    @relation(fields: [walletAddress], references: [address], onDelete: Cascade)
+  totalTrades           Int       @default(0)
+  buyTrades             Int       @default(0)
+  sellTrades            Int       @default(0)
+  winRate               Float?    // 胜率 (0-100)，无卖出样本时为 null
+  realizedPnlSol        Float?    // 已实现盈亏 (SOL)
+  realizedPnlUsd        Float?
+  avgHoldDurationHours  Float?    // 平均持仓小时
+  topTokens             String?   // JSON 格式主要代币交易分布
+  tradeFrequencyPerDay  Float     @default(0)
+  earlyEntryCount       Int       @default(0)
+  concentrationScore    Float     @default(0) // 0-100
+  riskScore             Float     @default(0) // 0-100
+  sampleSize            Int       @default(0)
+  calculatedAt          DateTime  @default(now())
+  dataReliability       String    @default("INSUFFICIENT_DATA") // HIGH, MEDIUM, LOW, INSUFFICIENT_DATA
+}
+
+// 规则标签
+model WalletTag {
+  id               String    @id @default(cuid())
+  walletAddress    String
+  wallet           Wallet    @relation(fields: [walletAddress], references: [address], onDelete: Cascade)
+  tag              String    // HIGH_FREQUENCY, EARLY_BUYER, CANDIDATE_SMART_MONEY, SHORT_TERM_TRADER, HIGH_CONCENTRATION, HIGH_RISK, INSUFFICIENT_DATA
+  displayName      String
+  triggerCondition String    // 触发规则公式与阈值
+  metricValues     String    // 触发时的量化参数值 (JSON)
+  sampleSize       Int
+  confidence       Float     @default(1.0)
+  calculatedAt     DateTime  @default(now())
+
+  @@unique([walletAddress, tag])
+  @@index([walletAddress])
+}
+
+// 监控报警事件
+model MonitorAlert {
+  id            String    @id @default(cuid())
+  walletAddress String
+  wallet        Wallet    @relation(fields: [walletAddress], references: [address], onDelete: Cascade)
+  signature     String
+  alertType     String    // NEW_BUY, NEW_SELL, LARGE_SWAP, SNIPE
+  title         String
+  message       String
+  tokenAddress  String
+  tokenSymbol   String?
+  amountSol     Float?
+  isRead        Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  @@index([walletAddress])
+  @@index([createdAt])
+}
+
+// 模拟交易记录
+model PaperTrade {
+  id            String    @id @default(cuid())
+  walletAddress String?   // 关联跟单钱包（若有）
+  wallet        Wallet?   @relation(fields: [walletAddress], references: [address])
+  tokenAddress  String
+  tokenSymbol   String?
+  side          String    // BUY, SELL
+  solAmount     Float
+  tokenAmount   Float
+  priceSol      Float
+  slippage      Float     @default(0.015) // 模拟滑点 (例如 0.015 = 1.5%)
+  feeSol        Float     @default(0.0005) // 模拟 Gas + 优先费
+  latencyMs     Int       @default(1200) // 模拟信号延迟
+  status        String    @default("FILLED") // FILLED, CANCELLED
+  pnlSol        Float?
+  pnlPercent    Float?
+  executedAt    DateTime  @default(now())
+
+  @@index([tokenAddress])
+  @@index([executedAt])
+}
+
+// 模拟持仓
+model PaperPosition {
+  id              String    @id @default(cuid())
+  tokenAddress    String    @unique
+  tokenSymbol     String?
+  remainingTokens Float
+  costSol         Float
+  avgPriceSol     Float
+  currentPriceSol Float?
+  unrealizedPnlSol Float?
+  realizedPnlSol  Float     @default(0)
+  isClosed        Boolean   @default(false)
+  openedAt        DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// AI 分析研报
+model AiReport {
+  id                   String    @id @default(cuid())
+  walletAddress        String
+  wallet               Wallet    @relation(fields: [walletAddress], references: [address], onDelete: Cascade)
+  tradingHabits        String
+  potentialAdvantages  String
+  majorRisks           String
+  dataReliability      String
+  watchRecommendation  String    // RECOMMEND, NEUTRAL, AVOID
+  rawReport            String
+  modelName            String
+  generatedAt          DateTime  @default(now())
+
+  @@index([walletAddress])
+}
+
+// 每日复盘总结
+model DailyReview {
+  id                String    @id @default(cuid())
+  reviewDate        String    @unique // YYYY-MM-DD
+  summary           String
+  topPerformers     String    // JSON 榜单
+  marketInsight     String
+  paperTradeStats   String    // JSON
+  createdAt         DateTime  @default(now())
+}
