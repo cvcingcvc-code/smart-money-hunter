@@ -94,6 +94,7 @@ ${JSON.stringify(structuredContext, null, 2)}`;
             temperature: 0.2,
             response_format: { type: 'json_object' },
           }),
+          signal: AbortSignal.timeout(15000), // 15s timeout to prevent thread hanging
         });
 
         if (response.ok) {

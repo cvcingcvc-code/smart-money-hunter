@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { syncService } from '@/lib/solana/sync';
+import { solanaRpc } from '@/lib/solana/rpc';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,9 +9,18 @@ export async function POST(
   { params }: { params: { address: string } }
 ) {
   try {
-    const address = params.address;
+    const address = params.address?.trim();
+    if (!address || !solanaRpc.validateAddress(address)) {
+      return NextResponse.json(
+        { success: false, error: '无效的 Solana 钱包地址' },
+        { status: 400 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const rawLimit = parseInt(searchParams.get('limit') || '20', 10);
+    // Hard limit: 1 to 50 transactions to prevent RPC exhaustion & rate limits
+    const limit = Math.max(1, Math.min(50, isNaN(rawLimit) ? 20 : rawLimit));
 
     const result = await syncService.syncWalletTransactions(address, limit);
 

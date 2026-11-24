@@ -6,8 +6,12 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const windowHours = parseInt(searchParams.get('hours') || '4', 10);
-    const minWallets = parseInt(searchParams.get('minWallets') || '2', 10);
+    const rawHours = parseInt(searchParams.get('hours') || '4', 10);
+    const rawMinWallets = parseInt(searchParams.get('minWallets') || '2', 10);
+
+    // Hard bounds: window between 1h and 72h, minWallets between 1 and 10
+    const windowHours = Math.max(1, Math.min(72, isNaN(rawHours) ? 4 : rawHours));
+    const minWallets = Math.max(1, Math.min(10, isNaN(rawMinWallets) ? 2 : rawMinWallets));
 
     const signals = await consensusEngine.detectConsensusSignals(windowHours, minWallets);
 

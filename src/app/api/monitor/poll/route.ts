@@ -6,7 +6,9 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const rawLimit = parseInt(searchParams.get('limit') || '10', 10);
+    // Hard limit: 1 to 20 wallets per poll call to prevent worker thread lockup
+    const limit = Math.max(1, Math.min(20, isNaN(rawLimit) ? 10 : rawLimit));
 
     const result = await monitorService.pollActiveWallets(limit);
 

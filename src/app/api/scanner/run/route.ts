@@ -6,7 +6,21 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const count = parseInt(searchParams.get('count') || '100', 10);
+    const rawCount = parseInt(searchParams.get('count') || '100', 10);
+    // Hard limit: count must be between 1 and 100
+    const count = Math.max(1, Math.min(100, isNaN(rawCount) ? 100 : rawCount));
+
+    const currentProgress = walletScanner.getProgress();
+    if (currentProgress.status === 'SCANNING' || currentProgress.status === 'ANALYZING') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '已有扫描任务正在执行中，请勿重复触发',
+          progress: currentProgress,
+        },
+        { status: 409 }
+      );
+    }
 
     // Launch background scan without blocking the HTTP request
     walletScanner.runFullScan(count).catch((err) => {

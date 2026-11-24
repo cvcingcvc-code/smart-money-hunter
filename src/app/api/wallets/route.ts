@@ -5,28 +5,46 @@ import { syncService } from '@/lib/solana/sync';
 
 export const dynamic = 'force-dynamic';
 
+const VALID_CATEGORIES = new Set([
+  'MEME_TRADER',
+  'SMART_MONEY',
+  'SNIPER',
+  'KOL',
+  'UNKNOWN',
+  'GENERAL',
+]);
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const search = searchParams.get('search') || '';
+    const search = (searchParams.get('search') || '').trim();
     const category = searchParams.get('category');
     const tag = searchParams.get('tag');
     const isActive = searchParams.get('active');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '25', 10);
+
+    // Clamp pagination parameters to prevent DoS / negative values
+    const rawPage = parseInt(searchParams.get('page') || '1', 10);
+    const page = Math.max(1, isNaN(rawPage) ? 1 : rawPage);
+
+    const rawLimit = parseInt(searchParams.get('limit') || '25', 10);
+    const limit = Math.max(1, Math.min(100, isNaN(rawLimit) ? 25 : rawLimit));
 
     const where: any = {};
 
     if (search) {
+      // Limit search length to avoid excessive SQL wildcard matching
+      const safeSearch = search.slice(0, 100);
       where.OR = [
-        { address: { contains: search } },
-        { label: { contains: search } },
-        { notes: { contains: search } },
+        { address: { contains: safeSearch } },
+        { label: { contains: safeSearch } },
+        { notes: { contains: safeSearch } },
       ];
     }
 
     if (category && category !== 'ALL') {
-      where.category = category;
+      if (VALID_CATEGORIES.has(category)) {
+        where.category = category;
+      }
     }
 
     if (isActive !== null && isActive !== undefined && isActive !== '') {
@@ -35,7 +53,7 @@ export async function GET(req: NextRequest) {
 
     if (tag) {
       where.tags = {
-        some: { tag },
+        some: { tag: tag.slice(0, 50) },
       };
     }
 
@@ -80,7 +98,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: '请求体必须为合法 JSON 格式' },
+        { status: 400 }
+      );
+    }
+
     const { address, label, category, notes, autoSync } = body;
 
     if (!address || typeof address !== 'string') {
@@ -92,16 +119,19 @@ export async function POST(req: NextRequest) {
 
     const trimmedAddress = address.trim();
 
-    // 1. Validate Solana public key
+    // 1. Validate Solana public key format
     const isValid = solanaRpc.validateAddress(trimmedAddress);
     if (!isValid) {
       return NextResponse.json(
-        { success: false, error: '无效的 Solana 钱包地址格式（需为 Base58 字符串）' },
+        { success: false, error: '无效的 Solana 钱包地址格式（需为合法的 Base58 字符串）' },
         { status: 400 }
       );
     }
 
-    // 2. Check if already exists
+    // 2. Validate category enum
+    const safeCategory = category && VALID_CATEGORIES.has(category) ? category : 'MEME_TRADER';
+
+    // 3. Check if already exists
     const existing = await prisma.wallet.findUnique({
       where: { address: trimmedAddress },
     });
@@ -112,20 +142,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Create wallet
+    // 4. Create wallet
     const wallet = await prisma.wallet.create({
       data: {
         address: trimmedAddress,
-        label: label?.trim() || null,
-        category: category || 'MEME_TRADER',
-        notes: notes?.trim() || null,
+        label: typeof label === 'string' ? label.trim().slice(0, 50) : null,
+        category: safeCategory,
+        notes: typeof notes === 'string' ? notes.trim().slice(0, 500) : null,
         isActive: true,
       },
     });
 
-    // 4. Optionally trigger initial background sync
+    // 5. Optionally trigger initial background sync
     if (autoSync) {
-      // Trigger non-blocking async sync
       syncService.syncWalletTransactions(trimmedAddress, 15).catch((err) => {
         console.warn(`[API Wallets POST] Auto sync failed for ${trimmedAddress}:`, err);
       });

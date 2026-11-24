@@ -19,10 +19,24 @@ class SolanaRpcClient {
     });
   }
 
+  private sanitizeUrl(url: string): string {
+    try {
+      const parsed = new URL(url);
+      for (const key of ['api-key', 'apiKey', 'token', 'key', 'auth']) {
+        if (parsed.searchParams.has(key)) {
+          parsed.searchParams.set(key, '******');
+        }
+      }
+      return parsed.toString();
+    } catch {
+      return url.replace(/(api[-_]?key|token|auth)=[^&]+/gi, '$1=******');
+    }
+  }
+
   private switchEndpoint() {
     this.currentEndpointIndex = (this.currentEndpointIndex + 1) % RPC_ENDPOINTS.length;
     const nextUrl = RPC_ENDPOINTS[this.currentEndpointIndex];
-    console.warn(`[Solana RPC] Switching to fallback endpoint: ${nextUrl}`);
+    console.warn(`[Solana RPC] Switching to fallback endpoint: ${this.sanitizeUrl(nextUrl)}`);
     this.connection = new Connection(nextUrl, 'confirmed');
   }
 
